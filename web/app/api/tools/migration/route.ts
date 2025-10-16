@@ -2,6 +2,54 @@ import { NextRequest, NextResponse } from 'next/server'
 import { spawn } from 'child_process'
 import path from 'path'
 
+// Google Sheets 구조 분석 (마이그레이션하지 않음)
+async function runAnalysis(spreadsheetId: string, sheetName?: string) {
+  return new Promise((resolve, reject) => {
+    const ssaPath = path.join(process.cwd(), '..', '..', 'ssa')
+    const scriptPath = path.join(ssaPath, 'analyze_migration.js')
+
+    const args = sheetName
+      ? [scriptPath, spreadsheetId, sheetName]
+      : [scriptPath, spreadsheetId]
+
+    const proc = spawn('node', args, {
+      cwd: ssaPath,
+      shell: true
+    })
+
+    let output = ''
+    let errorOutput = ''
+
+    proc.stdout.on('data', (data) => {
+      output += data.toString()
+    })
+
+    proc.stderr.on('data', (data) => {
+      errorOutput += data.toString()
+    })
+
+    proc.on('close', (code) => {
+      if (code === 0) {
+        try {
+          // JSON 파싱
+          const analysis = JSON.parse(output)
+          resolve(analysis)
+        } catch (parseError: any) {
+          reject(new Error(`Failed to parse analysis result: ${parseError.message}`))
+        }
+      } else {
+        reject(new Error(errorOutput || `Process exited with code ${code}`))
+      }
+    })
+
+    // 타임아웃 설정 (2분)
+    setTimeout(() => {
+      proc.kill()
+      reject(new Error('Analysis timeout (2 minutes)'))
+    }, 120000)
+  })
+}
+
 // Google Sheets 마이그레이션 실행
 async function runMigration(spreadsheetId?: string) {
   return new Promise((resolve, reject) => {
@@ -49,7 +97,7 @@ async function runMigration(spreadsheetId?: string) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { spreadsheetId } = body
+    const { spreadsheetId, action, sheetName } = body
 
     if (!spreadsheetId) {
       return NextResponse.json(
@@ -58,10 +106,16 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 마이그레이션 실행
-    const result = await runMigration(spreadsheetId)
-
-    return NextResponse.json(result)
+    // 액션에 따라 분석 또는 마이그레이션 실행
+    if (action === 'analyze') {
+      // 구조 분석만 수행
+      const result = await runAnalysis(spreadsheetId, sheetName)
+      return NextResponse.json(result)
+    } else {
+      // 전체 마이그레이션 실행
+      const result = await runMigration(spreadsheetId)
+      return NextResponse.json(result)
+    }
   } catch (error: any) {
     return NextResponse.json(
       { success: false, error: error.message },

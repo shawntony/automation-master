@@ -1,11 +1,13 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { FileSpreadsheet, Loader2, CheckCircle, XCircle, Play, Settings } from 'lucide-react'
+import { FileSpreadsheet, Loader2, CheckCircle, XCircle, Play, Settings, Search, Database } from 'lucide-react'
 
 export default function MigrationToolsPage() {
   const [spreadsheetId, setSpreadsheetId] = useState('')
   const [loading, setLoading] = useState(false)
+  const [analyzing, setAnalyzing] = useState(false)
+  const [analysis, setAnalysis] = useState<any>(null)
   const [result, setResult] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
   const [envStatus, setEnvStatus] = useState<any>(null)
@@ -22,6 +24,40 @@ export default function MigrationToolsPage() {
       setEnvStatus(data.environment)
     } catch (err) {
       setEnvStatus(null)
+    }
+  }
+
+  const handleAnalysis = async () => {
+    if (!spreadsheetId.trim()) {
+      setError('Spreadsheet ID를 입력해주세요')
+      return
+    }
+
+    setAnalyzing(true)
+    setError(null)
+    setAnalysis(null)
+
+    try {
+      const response = await fetch('/api/tools/migration', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          spreadsheetId: spreadsheetId.trim(),
+          action: 'analyze'
+        })
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        setAnalysis(data)
+      } else {
+        setError(data.error || '구조 분석 중 오류가 발생했습니다')
+      }
+    } catch (err: any) {
+      setError(err.message || '네트워크 오류가 발생했습니다')
+    } finally {
+      setAnalyzing(false)
     }
   }
 
@@ -101,9 +137,9 @@ export default function MigrationToolsPage() {
         </div>
       )}
 
-      {/* 마이그레이션 실행 폼 */}
+      {/* Step 1: 구조 분석 */}
       <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-        <h3 className="font-semibold mb-4">마이그레이션 실행</h3>
+        <h3 className="font-semibold mb-4">Step 1: 구조 분석</h3>
 
         <div className="space-y-4">
           <div>
@@ -116,7 +152,7 @@ export default function MigrationToolsPage() {
               onChange={(e) => setSpreadsheetId(e.target.value)}
               placeholder="예: 1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms"
               className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-              disabled={loading}
+              disabled={analyzing || loading}
             />
             <p className="text-xs text-gray-500 mt-1">
               Sheets URL에서 /d/ 뒤의 ID 부분을 입력하세요
@@ -124,19 +160,19 @@ export default function MigrationToolsPage() {
           </div>
 
           <button
-            onClick={handleMigration}
-            disabled={loading || !spreadsheetId.trim() || !envStatus?.ready}
-            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+            onClick={handleAnalysis}
+            disabled={analyzing || loading || !spreadsheetId.trim() || !envStatus?.ready}
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
           >
-            {loading ? (
+            {analyzing ? (
               <>
                 <Loader2 className="w-5 h-5 animate-spin" />
-                마이그레이션 진행 중...
+                구조 분석 중...
               </>
             ) : (
               <>
-                <Play className="w-5 h-5" />
-                마이그레이션 시작
+                <Search className="w-5 h-5" />
+                구조 분석
               </>
             )}
           </button>
@@ -147,22 +183,127 @@ export default function MigrationToolsPage() {
               <p className="text-sm text-red-600">{error}</p>
             </div>
           )}
-
-          {result && (
-            <div className="p-3 bg-green-50 border border-green-200 rounded flex items-start gap-2">
-              <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <p className="text-sm font-medium text-green-800">{result.message}</p>
-                {result.output && (
-                  <pre className="mt-2 text-xs text-green-700 whitespace-pre-wrap overflow-x-auto">
-                    {result.output}
-                  </pre>
-                )}
-              </div>
-            </div>
-          )}
         </div>
       </div>
+
+      {/* 분석 결과 표시 */}
+      {analysis && (
+        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+          <div className="flex items-center gap-2 mb-4">
+            <CheckCircle className="w-6 h-6 text-green-600" />
+            <h3 className="font-semibold">분석 결과</h3>
+          </div>
+
+          <div className="space-y-4">
+            {/* 기본 정보 */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-blue-50 p-3 rounded">
+                <p className="text-xs text-gray-600">총 레코드</p>
+                <p className="text-2xl font-bold text-blue-600">
+                  {analysis.analysis.totalRecords.toLocaleString()}
+                </p>
+              </div>
+              <div className="bg-green-50 p-3 rounded">
+                <p className="text-xs text-gray-600">예상 소요 시간</p>
+                <p className="text-2xl font-bold text-green-600">
+                  {analysis.analysis.estimatedTime}
+                </p>
+              </div>
+            </div>
+
+            {/* 생성될 테이블 */}
+            <div>
+              <h4 className="text-sm font-semibold mb-2">생성될 테이블</h4>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                {Object.entries(analysis.analysis.tablesToCreate).map(([table, count]) => (
+                  <div key={table} className="bg-gray-50 p-2 rounded text-xs">
+                    <p className="font-medium">{table}</p>
+                    <p className="text-gray-600">{count as string}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* 데이터 샘플 */}
+            <div>
+              <h4 className="text-sm font-semibold mb-2">데이터 샘플 (처음 5개)</h4>
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-xs">
+                  <thead>
+                    <tr className="bg-gray-100">
+                      <th className="px-2 py-1 text-left">날짜</th>
+                      <th className="px-2 py-1 text-left">상품</th>
+                      <th className="px-2 py-1 text-left">카테고리</th>
+                      <th className="px-2 py-1 text-right">수량</th>
+                      <th className="px-2 py-1 text-right">단가</th>
+                      <th className="px-2 py-1 text-right">매출액</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {analysis.analysis.dataSample.map((row: any, idx: number) => (
+                      <tr key={idx} className="border-b">
+                        <td className="px-2 py-1">{row.date}</td>
+                        <td className="px-2 py-1">{row.product_name}</td>
+                        <td className="px-2 py-1">{row.category}</td>
+                        <td className="px-2 py-1 text-right">{row.quantity}</td>
+                        <td className="px-2 py-1 text-right">{row.unit_price?.toLocaleString()}</td>
+                        <td className="px-2 py-1 text-right">{row.sales_amount?.toLocaleString()}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Step 2: 마이그레이션 실행 */}
+      {analysis && (
+        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+          <h3 className="font-semibold mb-4">Step 2: 마이그레이션 실행</h3>
+
+          <div className="space-y-4">
+            <div className="bg-yellow-50 border border-yellow-200 rounded p-3 text-sm">
+              <p className="text-yellow-800">
+                ⚠️ 위의 분석 결과를 확인하셨나요? 마이그레이션을 실행하면 Supabase에 테이블이 생성됩니다.
+              </p>
+            </div>
+
+            <button
+              onClick={handleMigration}
+              disabled={loading}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  마이그레이션 진행 중...
+                </>
+              ) : (
+                <>
+                  <Database className="w-5 h-5" />
+                  마이그레이션 실행
+                </>
+              )}
+            </button>
+
+            {result && (
+              <div className="p-3 bg-green-50 border border-green-200 rounded flex items-start gap-2">
+                <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-green-800">{result.message}</p>
+                  {result.output && (
+                    <pre className="mt-2 text-xs text-green-700 whitespace-pre-wrap overflow-x-auto max-h-40">
+                      {result.output}
+                    </pre>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* 마이그레이션 단계 안내 */}
       <div className="bg-white rounded-lg shadow-md p-6 mb-6">
