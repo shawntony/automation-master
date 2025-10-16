@@ -1,0 +1,89 @@
+{
+  "projectName": "my-project",
+  "createdAt": "2025-10-16T11:08:45.296Z",
+  "updatedAt": "2025-10-16T11:08:45.296Z",
+  "currentStep": 1,
+  "steps": [
+    {
+      "stepId": 1,
+      "status": "pending",
+      "startedAt": null,
+      "completedAt": null,
+      "checklist": {},
+      "notes": []
+    },
+    {
+      "stepId": 2,
+      "status": "pending",
+      "startedAt": null,
+      "completedAt": null,
+      "checklist": {},
+      "notes": []
+    },
+    {
+      "stepId": 3,
+      "status": "pending",
+      "startedAt": null,
+      "completedAt": null,
+      "checklist": {},
+      "notes": []
+    },
+    {
+      "stepId": 4,
+      "status": "pending",
+      "startedAt": null,
+      "completedAt": null,
+      "checklist": {},
+      "notes": []
+    },
+    {
+      "stepId": 5,
+      "status": "pending",
+      "startedAt": null,
+      "completedAt": null,
+      "checklist": {},
+      "notes": []
+    },
+    {
+      "stepId": 6,
+      "status": "pending",
+      "startedAt": null,
+      "completedAt": null,
+      "checklist": {},
+      "notes": []
+    },
+    {
+      "stepId": 7,
+      "status": "pending",
+      "startedAt": null,
+      "completedAt": null,
+      "checklist": {},
+      "notes": []
+    },
+    {
+      "stepId": 8,
+      "status": "pending",
+      "startedAt": null,
+      "completedAt": null,
+      "checklist": {},
+      "notes": []
+    },
+    {
+      "stepId": 9,
+      "status": "pending",
+      "startedAt": null,
+      "completedAt": null,
+      "checklist": {},
+      "notes": []
+    },
+    {
+      "stepId": 10,
+      "status": "pending",
+      "startedAt": null,
+      "completedAt": null,
+      "checklist": {},
+      "notes": []
+    }
+  ],
+  "envConfig": null
+}

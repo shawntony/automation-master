@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir:*)",
+      "Bash(npm install)",
+      "Bash(dir)",
+      "mcp__serena__list_dir",
+      "Bash(node:*)",
+      "Bash(npm --version)",
+      "mcp__serena__activate_project",
+      "Bash(npm test)",
+      "Bash(dir:*)",
+      "Bash(npm run dev)",
+      "Bash(npm run web:dev:*)",
+      "Bash(npx kill-port:*)",
+      "Bash(cat:*)",
+      "Bash(timeout:*)",
+      "Bash(if not exist \"C:\\Users\\gram\\myautomation\\automationmaster\\web\\lib\" mkdir \"C:\\Users\\gram\\myautomation\\automationmaster\\web\\lib\")",
+      "Bash(test:*)",
+      "Read(//c/Users/gram/myautomation/**)",
+      "mcp__serena__read_memory",
+      "mcp__serena__think_about_collected_information",
+      "Bash(chmod:*)",
+      "Bash(git init:*)",
+      "Bash(git add:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

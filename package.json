@@ -1,0 +1,50 @@
+{
+  "name": "automation-master",
+  "version": "1.1.0",
+  "description": "단계별 자동화 툴 개발 가이드 시스템 + SSA 통합",
+  "main": "src/cli/index.js",
+  "type": "module",
+  "bin": {
+    "automaster": "./src/cli/index.js"
+  },
+  "scripts": {
+    "start": "node src/cli/index.js",
+    "guide": "node src/cli/index.js guide",
+    "init": "node src/cli/index.js init",
+    "env": "node src/cli/index.js env",
+    "status": "node src/cli/index.js status",
+    "checklist": "node src/cli/index.js checklist",
+    "analyze": "node src/cli/index.js analyze",
+    "prompt": "node src/cli/index.js prompt",
+    "lead": "node src/cli/index.js lead",
+    "workflow": "node src/cli/index.js workflow",
+    "web:install": "cd web && npm install",
+    "web:dev": "cd web && npm run dev",
+    "web:build": "cd web && npm run build",
+    "web:start": "cd web && npm run start",
+    "ssa:fullstack": "node ../ssa/src/fullstack-generator/masterCli.js",
+    "ssa:backend": "node ../ssa/backend-generator.js",
+    "ssa:frontend": "node ../ssa/src/frontend-generator/cli.js",
+    "ssa:migrate": "cd ../ssa && node migrate_to_normalized_tables.js",
+    "tools:pdf": "node src/tools/pdf-cli.js",
+    "tools:hwp": "node src/tools/hwp-cli.js",
+    "tools:telegram": "cd ../ssa && node src/telegram/telegramBot.js"
+  },
+  "keywords": [
+    "automation",
+    "guide",
+    "cli",
+    "development"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "chalk": "^5.3.0",
+    "commander": "^11.1.0",
+    "inquirer": "^9.2.12",
+    "ora": "^8.0.1",
+    "boxen": "^7.1.1",
+    "axios": "^1.6.0",
+    "form-data": "^4.0.0"
+  }
+}
