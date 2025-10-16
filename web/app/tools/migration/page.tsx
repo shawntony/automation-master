@@ -1,9 +1,61 @@
 'use client'
 
-import { useState } from 'react'
-import { FileSpreadsheet } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { FileSpreadsheet, Loader2, CheckCircle, XCircle, Play, Settings } from 'lucide-react'
 
 export default function MigrationToolsPage() {
+  const [spreadsheetId, setSpreadsheetId] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [result, setResult] = useState<any>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [envStatus, setEnvStatus] = useState<any>(null)
+
+  // 환경 변수 상태 확인
+  useEffect(() => {
+    checkEnvironment()
+  }, [])
+
+  const checkEnvironment = async () => {
+    try {
+      const response = await fetch('/api/tools/migration?action=check-env')
+      const data = await response.json()
+      setEnvStatus(data.environment)
+    } catch (err) {
+      setEnvStatus(null)
+    }
+  }
+
+  const handleMigration = async () => {
+    if (!spreadsheetId.trim()) {
+      setError('Spreadsheet ID를 입력해주세요')
+      return
+    }
+
+    setLoading(true)
+    setError(null)
+    setResult(null)
+
+    try {
+      const response = await fetch('/api/tools/migration', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ spreadsheetId: spreadsheetId.trim() })
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        setResult(data)
+      } else {
+        setError(data.error || '마이그레이션 중 오류가 발생했습니다')
+      }
+    } catch (err: any) {
+      setError(err.message || '네트워크 오류가 발생했습니다')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
     <div className="p-8 max-w-4xl mx-auto">
       <div className="mb-8">
@@ -16,46 +68,144 @@ export default function MigrationToolsPage() {
         </p>
       </div>
 
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h3 className="font-semibold mb-4">마이그레이션 단계</h3>
+      {/* 환경 변수 상태 */}
+      {envStatus && (
+        <div className="mb-6 bg-white rounded-lg shadow-md p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Settings className="w-5 h-5 text-gray-600" />
+            <h3 className="font-semibold">환경 설정 상태</h3>
+          </div>
+          <div className="space-y-2 text-sm">
+            <div className="flex items-center gap-2">
+              {envStatus.googleCredentials ? (
+                <CheckCircle className="w-4 h-4 text-green-600" />
+              ) : (
+                <XCircle className="w-4 h-4 text-red-600" />
+              )}
+              <span>Google Sheets API 인증</span>
+            </div>
+            <div className="flex items-center gap-2">
+              {envStatus.supabaseConfig ? (
+                <CheckCircle className="w-4 h-4 text-green-600" />
+              ) : (
+                <XCircle className="w-4 h-4 text-red-600" />
+              )}
+              <span>Supabase 연결 설정</span>
+            </div>
+          </div>
+          {!envStatus.ready && (
+            <div className="mt-3 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-800">
+              ⚠️ 환경 변수를 먼저 설정해주세요
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 마이그레이션 실행 폼 */}
+      <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+        <h3 className="font-semibold mb-4">마이그레이션 실행</h3>
+
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Google Spreadsheet ID
+            </label>
+            <input
+              type="text"
+              value={spreadsheetId}
+              onChange={(e) => setSpreadsheetId(e.target.value)}
+              placeholder="예: 1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms"
+              className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              disabled={loading}
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Sheets URL에서 /d/ 뒤의 ID 부분을 입력하세요
+            </p>
+          </div>
+
+          <button
+            onClick={handleMigration}
+            disabled={loading || !spreadsheetId.trim() || !envStatus?.ready}
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                마이그레이션 진행 중...
+              </>
+            ) : (
+              <>
+                <Play className="w-5 h-5" />
+                마이그레이션 시작
+              </>
+            )}
+          </button>
+
+          {error && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded flex items-start gap-2">
+              <XCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-red-600">{error}</p>
+            </div>
+          )}
+
+          {result && (
+            <div className="p-3 bg-green-50 border border-green-200 rounded flex items-start gap-2">
+              <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-green-800">{result.message}</p>
+                {result.output && (
+                  <pre className="mt-2 text-xs text-green-700 whitespace-pre-wrap overflow-x-auto">
+                    {result.output}
+                  </pre>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* 마이그레이션 단계 안내 */}
+      <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+        <h3 className="font-semibold mb-4">마이그레이션 프로세스</h3>
         <ol className="space-y-4">
           <li className="flex gap-3">
-            <span className="flex-shrink-0 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center">
+            <span className="flex-shrink-0 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm">
               1
             </span>
             <div>
-              <h4 className="font-semibold">환경변수 설정</h4>
-              <p className="text-sm text-gray-600">
-                Google Sheets API 및 Supabase 연결 정보 설정
+              <h4 className="font-semibold text-sm">구조 분석</h4>
+              <p className="text-xs text-gray-600">
+                Google Sheets의 데이터 구조를 자동으로 분석
               </p>
             </div>
           </li>
           <li className="flex gap-3">
-            <span className="flex-shrink-0 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center">
+            <span className="flex-shrink-0 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm">
               2
             </span>
             <div>
-              <h4 className="font-semibold">CLI에서 실행</h4>
-              <code className="block mt-2 bg-gray-100 p-3 rounded text-sm">
-                npm run ssa:migrate
-              </code>
+              <h4 className="font-semibold text-sm">데이터 정규화</h4>
+              <p className="text-xs text-gray-600">
+                차원 테이블과 팩트 테이블로 정규화
+              </p>
             </div>
           </li>
           <li className="flex gap-3">
-            <span className="flex-shrink-0 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center">
+            <span className="flex-shrink-0 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm">
               3
             </span>
             <div>
-              <h4 className="font-semibold">자동 처리</h4>
-              <p className="text-sm text-gray-600">
-                구조 분석 → 정규화 → Supabase 마이그레이션
+              <h4 className="font-semibold text-sm">Supabase 마이그레이션</h4>
+              <p className="text-xs text-gray-600">
+                PostgreSQL 테이블 생성 및 데이터 삽입
               </p>
             </div>
           </li>
         </ol>
       </div>
 
-      <div className="mt-8 bg-blue-50 rounded-lg p-6">
+      {/* 자동 생성 항목 */}
+      <div className="bg-blue-50 rounded-lg p-6">
         <h3 className="font-semibold mb-3">✨ 자동으로 생성되는 것들</h3>
         <ul className="space-y-2 text-sm text-gray-700">
           <li>✅ 정규화된 테이블 (차원 + 팩트 테이블)</li>

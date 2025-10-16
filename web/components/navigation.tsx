@@ -10,7 +10,9 @@ import {
   Layout,
   Wrench,
   FileSpreadsheet,
-  Settings
+  Settings,
+  FileText,
+  FileType
 } from 'lucide-react'
 
 const navItems = [
@@ -54,6 +56,16 @@ const navItems = [
         name: 'Google Sheets 마이그레이션',
         href: '/tools/migration',
         icon: FileSpreadsheet
+      },
+      {
+        name: 'PDF 추출 도구',
+        href: '/tools/pdf',
+        icon: FileText
+      },
+      {
+        name: 'HWP 추출 도구',
+        href: '/tools/hwp',
+        icon: FileType
       }
     ]
   },
