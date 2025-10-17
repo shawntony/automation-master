@@ -3,6 +3,8 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, ArrowRight, CheckCircle2, Circle, Loader2 } from 'lucide-react'
+import { useToast } from '@/components/ui/toast'
+import { postData, ApiError } from '@/lib/utils/api'
 
 const steps = [
   { id: 1, title: "아이디어 발굴 및 정의", duration: "1-2주" },
@@ -26,6 +28,7 @@ interface FormData {
 }
 
 export default function WorkflowPage() {
+  const { success, error, warning } = useToast()
   const [currentStep, setCurrentStep] = useState(1)
   const [projectName, setProjectName] = useState('')
   const [showProjectSetup, setShowProjectSetup] = useState(true)
@@ -44,27 +47,27 @@ export default function WorkflowPage() {
     e.preventDefault()
     if (projectName) {
       try {
-        // API 호출하여 실제 프로젝트 생성
-        const response = await fetch('/api/project/create', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ projectName })
-        })
-
-        const data = await response.json()
+        const data = await postData('/api/project/create', { projectName })
 
         if (data.success) {
           console.log('✅ 프로젝트가 생성되었습니다:', data)
-          alert(`✅ 프로젝트 "${projectName}"가 성공적으로 생성되었습니다!\n\nconfig/progress.json 파일이 생성되었습니다.`)
+          success(
+            '프로젝트 생성 완료',
+            `프로젝트 "${projectName}"가 성공적으로 생성되었습니다! config/progress.json 파일이 생성되었습니다.`
+          )
           setFormData({ ...formData, projectName })
           setShowProjectSetup(false)
         } else {
           console.error('프로젝트 생성 실패:', data.error)
-          alert(`❌ 프로젝트 생성에 실패했습니다: ${data.error}`)
+          error('프로젝트 생성 실패', data.error)
         }
-      } catch (error) {
-        console.error('API 호출 오류:', error)
-        alert('❌ 서버 연결에 실패했습니다.')
+      } catch (err) {
+        console.error('API 호출 오류:', err)
+        if (err instanceof ApiError) {
+          error('서버 연결 실패', err.message)
+        } else {
+          error('서버 연결 실패', '서버 연결에 실패했습니다.')
+        }
       }
     }
   }
@@ -135,17 +138,10 @@ ${data.additionalInfo || '(없음)'}
 
   const handleCompleteStep = async () => {
     try {
-      // API 호출하여 단계 완료 처리
-      const response = await fetch('/api/progress', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          stepNumber: currentStep,
-          action: 'complete'
-        })
+      const data = await postData('/api/progress', {
+        stepNumber: currentStep,
+        action: 'complete'
       })
-
-      const data = await response.json()
 
       if (data.success) {
         console.log('✅ 단계가 완료되었습니다:', data)
@@ -164,7 +160,7 @@ ${data.additionalInfo || '(없음)'}
         }
       } else {
         console.error('단계 완료 실패:', data.error)
-        alert(`⚠️ 단계 저장에 실패했지만 다음 단계로 진행합니다.`)
+        warning('단계 저장 실패', '단계 저장에 실패했지만 다음 단계로 진행합니다.')
 
         // 실패해도 다음 단계로 진행
         if (currentStep < 10) {
@@ -180,9 +176,9 @@ ${data.additionalInfo || '(없음)'}
           setGeneratedPrompt('')
         }
       }
-    } catch (error) {
-      console.error('API 호출 오류:', error)
-      alert('⚠️ 서버 연결에 실패했지만 다음 단계로 진행합니다.')
+    } catch (err) {
+      console.error('API 호출 오류:', err)
+      warning('서버 연결 실패', '서버 연결에 실패했지만 다음 단계로 진행합니다.')
 
       // 실패해도 다음 단계로 진행
       if (currentStep < 10) {
@@ -202,7 +198,7 @@ ${data.additionalInfo || '(없음)'}
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(generatedPrompt)
-    alert('프롬프트가 클립보드에 복사되었습니다!')
+    success('복사 완료', '프롬프트가 클립보드에 복사되었습니다!')
   }
 
   if (showProjectSetup) {

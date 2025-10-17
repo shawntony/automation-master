@@ -29,7 +29,10 @@
       "Bash(git checkout:*)",
       "Bash(git push:*)",
       "Bash(git remote set-head:*)",
-      "Bash(git merge:*)"
+      "Bash(git merge:*)",
+      "Bash(curl:*)",
+      "SlashCommand(/sc:analyze C:\\Users\\gram\\myautomation\\automationmaster\\web --focus quality)",
+      "mcp__serena__get_symbols_overview"
     ],
     "deny": [],
     "ask": []

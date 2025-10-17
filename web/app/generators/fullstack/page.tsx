@@ -2,8 +2,11 @@
 
 import { useState } from 'react'
 import { Sparkles, Zap, CheckCircle2, AlertCircle } from 'lucide-react'
+import { postData, ApiError } from '@/lib/utils/api'
+import { useToast } from '@/components/ui/toast'
 
 export default function FullstackGeneratorPage() {
+  const { success, error: showError } = useToast()
   const [formData, setFormData] = useState({
     schemaFile: '',
     projectName: '',
@@ -19,19 +22,17 @@ export default function FullstackGeneratorPage() {
     setResult(null)
 
     try {
-      const response = await fetch('/api/generators/fullstack', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
-      })
-
-      const data = await response.json()
+      const data = await postData('/api/generators/fullstack', formData)
       setResult(data)
-    } catch (error: any) {
-      setResult({
-        success: false,
-        error: error.message
-      })
+      if (data.success) {
+        success('생성 완료', data.message || '풀스택 앱이 성공적으로 생성되었습니다.')
+      } else {
+        showError('생성 실패', data.error || '생성 중 오류가 발생했습니다.')
+      }
+    } catch (err: any) {
+      const errorMsg = err instanceof ApiError ? err.message : '네트워크 오류가 발생했습니다'
+      setResult({ success: false, error: errorMsg })
+      showError('생성 실패', errorMsg)
     } finally {
       setGenerating(false)
     }

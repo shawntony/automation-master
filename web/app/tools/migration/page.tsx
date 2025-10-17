@@ -2,8 +2,11 @@
 
 import { useState, useEffect } from 'react'
 import { FileSpreadsheet, Loader2, CheckCircle, XCircle, Play, Settings, Search, Database } from 'lucide-react'
+import { getData, postData, ApiError } from '@/lib/utils/api'
+import { useToast } from '@/components/ui/toast'
 
 export default function MigrationToolsPage() {
+  const { success, error: showError } = useToast()
   const [spreadsheetId, setSpreadsheetId] = useState('')
   const [loading, setLoading] = useState(false)
   const [analyzing, setAnalyzing] = useState(false)
@@ -19,8 +22,7 @@ export default function MigrationToolsPage() {
 
   const checkEnvironment = async () => {
     try {
-      const response = await fetch('/api/tools/migration?action=check-env')
-      const data = await response.json()
+      const data = await getData('/api/tools/migration?action=check-env')
       setEnvStatus(data.environment)
     } catch (err) {
       setEnvStatus(null)
@@ -38,24 +40,23 @@ export default function MigrationToolsPage() {
     setAnalysis(null)
 
     try {
-      const response = await fetch('/api/tools/migration', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          spreadsheetId: spreadsheetId.trim(),
-          action: 'analyze'
-        })
+      const data = await postData('/api/tools/migration', {
+        spreadsheetId: spreadsheetId.trim(),
+        action: 'analyze'
       })
-
-      const data = await response.json()
 
       if (data.success) {
         setAnalysis(data)
+        success('분석 완료', '스프레드시트 구조 분석이 완료되었습니다.')
       } else {
-        setError(data.error || '구조 분석 중 오류가 발생했습니다')
+        const errorMsg = data.error || '구조 분석 중 오류가 발생했습니다'
+        setError(errorMsg)
+        showError('분석 실패', errorMsg)
       }
     } catch (err: any) {
-      setError(err.message || '네트워크 오류가 발생했습니다')
+      const errorMsg = err instanceof ApiError ? err.message : '네트워크 오류가 발생했습니다'
+      setError(errorMsg)
+      showError('분석 실패', errorMsg)
     } finally {
       setAnalyzing(false)
     }
@@ -72,21 +73,22 @@ export default function MigrationToolsPage() {
     setResult(null)
 
     try {
-      const response = await fetch('/api/tools/migration', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ spreadsheetId: spreadsheetId.trim() })
+      const data = await postData('/api/tools/migration', {
+        spreadsheetId: spreadsheetId.trim()
       })
-
-      const data = await response.json()
 
       if (data.success) {
         setResult(data)
+        success('마이그레이션 완료', '데이터가 Supabase로 성공적으로 마이그레이션되었습니다.')
       } else {
-        setError(data.error || '마이그레이션 중 오류가 발생했습니다')
+        const errorMsg = data.error || '마이그레이션 중 오류가 발생했습니다'
+        setError(errorMsg)
+        showError('마이그레이션 실패', errorMsg)
       }
     } catch (err: any) {
-      setError(err.message || '네트워크 오류가 발생했습니다')
+      const errorMsg = err instanceof ApiError ? err.message : '네트워크 오류가 발생했습니다'
+      setError(errorMsg)
+      showError('마이그레이션 실패', errorMsg)
     } finally {
       setLoading(false)
     }

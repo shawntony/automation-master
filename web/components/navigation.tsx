@@ -12,7 +12,10 @@ import {
   FileSpreadsheet,
   Settings,
   FileText,
-  FileType
+  FileType,
+  Cog,
+  MessageCircle,
+  BarChart3
 } from 'lucide-react'
 
 const navItems = [
@@ -66,6 +69,16 @@ const navItems = [
         name: 'HWP 추출 도구',
         href: '/tools/hwp',
         icon: FileType
+      },
+      {
+        name: 'Telegram 봇',
+        href: '/tools/telegram',
+        icon: MessageCircle
+      },
+      {
+        name: 'Metabase 대시보드',
+        href: '/tools/metabase',
+        icon: BarChart3
       }
     ]
   },
@@ -73,6 +86,11 @@ const navItems = [
     name: '대시보드',
     href: '/dashboard',
     icon: Settings
+  },
+  {
+    name: '환경 설정',
+    href: '/settings',
+    icon: Cog
   }
 ]
 

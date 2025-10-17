@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, CheckCircle2, Circle, Clock, BarChart3, Zap } from 'lucide-react'
+import { getData, ApiError } from '@/lib/utils/api'
 
 interface StepStatus {
   id: number
@@ -20,8 +21,7 @@ export default function DashboardPage() {
   useEffect(() => {
     const loadProgress = async () => {
       try {
-        const response = await fetch('/api/progress')
-        const data = await response.json()
+        const data = await getData('/api/progress')
 
         if (data.success && data.progress) {
           const progress = data.progress
