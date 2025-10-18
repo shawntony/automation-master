@@ -36,7 +36,9 @@
       "Bash(npm install:*)",
       "Bash(npx playwright install chromium)",
       "Bash(npx playwright test:*)",
-      "Bash(npm run test:chromium:*)"
+      "Bash(npm run test:chromium:*)",
+      "Read(//c/Users/gram/**)",
+      "Bash(git restore web/playwright-report/index.html web/test-results/.last-run.json web/test-results/results.json)"
     ],
     "deny": [],
     "ask": []
