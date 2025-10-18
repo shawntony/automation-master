@@ -32,9 +32,20 @@
       "Bash(git merge:*)",
       "Bash(curl:*)",
       "SlashCommand(/sc:analyze C:\\Users\\gram\\myautomation\\automationmaster\\web --focus quality)",
-      "mcp__serena__get_symbols_overview"
+      "mcp__serena__get_symbols_overview",
+      "Bash(npm install:*)",
+      "Bash(npx playwright install chromium)",
+      "Bash(npx playwright test:*)",
+      "Bash(npm run test:chromium:*)"
     ],
     "deny": [],
     "ask": []
-  }
+  },
+  "enabledMcpjsonServers": [
+    "supabase",
+    "context7",
+    "github",
+    "playwright",
+    "serena"
+  ]
 }

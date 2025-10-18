@@ -1,0 +1,16 @@
+
+%PDF-1.4
+Sample Invoice Document
+
+Customer: John Doe
+Invoice Number: INV-2024-001
+Date: 2024-01-15
+
+Items:
+- Product A: $100.00
+- Product B: $50.00
+- Tax: $15.00
+
+Total: $165.00
+
+Thank you for your business!

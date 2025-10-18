@@ -1,0 +1,24 @@
+{
+  "pdf": {
+    "simpleText": [
+      "Sample Invoice Document",
+      "Customer: John Doe",
+      "Invoice Number: INV-2024-001",
+      "Date: 2024-01-15",
+      "Total: $165.00"
+    ],
+    "keyValue": {
+      "Customer": "John Doe",
+      "Invoice Number": "INV-2024-001",
+      "Date": "2024-01-15",
+      "Total": "$165.00"
+    }
+  },
+  "hwp": {
+    "simpleText": [
+      "제목: 테스트 문서",
+      "작성일: 2024-01-15",
+      "작성자: 홍길동"
+    ]
+  }
+}

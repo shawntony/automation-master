@@ -358,7 +358,7 @@ MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC...
       <div className="flex gap-3">
         <Button
           onClick={handleSave}
-          disabled={saving || loading}
+          disabled={saving}
           className="flex-1"
         >
           {saving ? (
