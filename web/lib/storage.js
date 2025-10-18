@@ -2,8 +2,8 @@
  * 진행상황 저장 및 로드
  */
 
-import fs from 'fs/promises';
-import path from 'path';
+const fs = require('fs/promises');
+const path = require('path');
 
 class Storage {
   constructor() {
@@ -209,4 +209,5 @@ class Storage {
   }
 }
 
-export default Storage;
+module.exports = Storage;
+module.exports.default = Storage;
