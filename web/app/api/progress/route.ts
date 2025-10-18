@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import Storage from '@/lib/storage'
+const Storage = require('@/lib/storage')
 
 // GET: 진행 상황 조회
 export async function GET() {
