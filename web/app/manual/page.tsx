@@ -802,6 +802,175 @@ ssa/
     `
   },
   {
+    id: 'proposal-generator-detailed',
+    title: '제안서 자동 생성 상세',
+    category: 'SSA',
+    keywords: ['제안서', 'proposal', 'ppt', 'canva', 'ai', '스타일'],
+    content: `
+## 🎨 제안서 자동 생성 시스템 상세
+
+### 해결하는 문제
+
+- ❌ 제안서 제작에 평균 4-8시간 소요
+- ❌ 디자인 일관성 유지의 어려움
+- ❌ 반복적인 슬라이드 레이아웃 작업
+- ❌ 브랜드 가이드라인 수동 적용
+
+### 기대 효과
+
+- ✅ 제안서 제작 시간 80% 단축 (4시간 → 50분)
+- ✅ 브랜드 디자인 일관성 100% 유지
+- ✅ 반복 작업 자동화로 창의적 작업에 집중
+- ✅ AI 기반 콘텐츠 자동 배치 및 최적화
+
+### 📝 콘텐츠 입력 방식
+
+**1. 자유 텍스트 입력 (가장 빠름, 5분)**
+간단한 아이디어나 메모를 입력하면 AI가 구조화
+
+**2. 구조화 입력 (권장, 10-15분)**
+YAML 형식으로 슬라이드별 상세 정보 입력
+
+**3. 파일 업로드 (10분)**
+기존 문서 (.txt, .docx, .md) 파일 업로드
+
+**4. 대화형 입력 (가장 상세, 20분)**
+Claude와 대화하며 내용 구체화
+
+### 🛠 기술 스택
+
+**필수 도구:**
+- Claude Code - AI 분석 및 자동화 엔진
+- Canva MCP - 디자인 생성 및 편집
+- Node.js (22.16+) - MCP 서버 실행 환경
+
+**계정 요구사항:**
+- ✅ Claude Pro 또는 Team 구독
+- ✅ Canva Pro 또는 Enterprise 계정
+    `
+  },
+  {
+    id: 'proposal-features',
+    title: '제안서 생성 주요 기능',
+    category: 'SSA',
+    keywords: ['제안서', '기능', 'features', '스타일', '품질'],
+    content: `
+## 🎯 제안서 생성 주요 기능
+
+### 1. 스타일 학습 엔진
+- 색상 팔레트 자동 추출
+- 폰트 스타일 분석
+- 레이아웃 패턴 인식
+- 디자인 요소 분류
+
+### 2. 콘텐츠 자동 배치
+- 텍스트 분량 자동 조절
+- 이미지 최적 위치 선택
+- 차트/그래프 자동 생성
+- 아이콘 자동 매칭
+
+### 3. 품질 진단
+- 디자인 일관성 검사
+- 가독성 점수 측정
+- 메시지 전달력 평가
+- 개선 제안 생성
+
+### 📊 성공 지표 (KPI)
+
+**시간 절감:**
+- 제안서 제작 시간: 4시간 → 50분 (79% 감소)
+- 디자인 수정 시간: 2시간 → 10분 (92% 감소)
+
+**품질 향상:**
+- 브랜드 일관성: 60% → 100%
+- 슬라이드 품질 등급: D → A
+
+**사용성:**
+- 학습 시간: 30분 이내
+- 재사용률: 80% 이상
+    `
+  },
+  {
+    id: 'proposal-examples',
+    title: '제안서 생성 사용 예시',
+    category: 'SSA',
+    keywords: ['제안서', '예시', 'example', '사용법'],
+    content: `
+## 📚 제안서 생성 사용 예시
+
+### 예시 1: 신규 제안서 작성 (AI 스타일 학습)
+
+\`\`\`bash
+# 1. 템플릿 스타일 학습
+npm run proposal:learn -- --template ./company-template.pptx
+
+# 2. 시나리오 작성 (자유 텍스트)
+# scenario.txt 파일에 아이디어 작성
+
+# 3. 제안서 생성
+npm run proposal:generate -- --scenario ./scenario.txt --method ai-learning
+
+# 결과: 25분 만에 완성된 제안서
+\`\`\`
+
+### 예시 2: 기존 PPT 개선 (진단 및 개선)
+
+\`\`\`bash
+# 1. 기존 PPT 진단
+npm run proposal:diagnose -- --file ./old-proposal.pptx
+
+# 진단 결과:
+# - 디자인 등급: D
+# - 개선 필요 사항: 12개
+# - 예상 개선 시간: 40분
+
+# 2. 자동 개선
+npm run proposal:improve -- --file ./old-proposal.pptx --grade A
+
+# 결과: D등급 → A등급 변환
+\`\`\`
+
+### 예시 3: Canva 템플릿 활용 (직접 임포트)
+
+\`\`\`bash
+# Canva 템플릿으로 빠른 생성
+npm run proposal:import -- --scenario ./scenario.yaml --canva-template "business-proposal"
+
+# 결과: 15분 만에 전문 디자인 제안서
+\`\`\`
+    `
+  },
+  {
+    id: 'proposal-troubleshooting',
+    title: '제안서 생성 문제 해결',
+    category: 'SSA',
+    keywords: ['제안서', '문제', 'troubleshooting', 'canva', '해결'],
+    content: `
+## 🆘 제안서 생성 문제 해결
+
+### Q: Canva 연동이 안 됩니다
+**A:** Canva API 키와 Claude MCP 설정을 확인하세요
+- Canva Pro 계정이 필요합니다
+- MCP 서버가 실행 중인지 확인하세요
+
+### Q: 스타일 학습이 정확하지 않습니다
+**A:** 템플릿 PPT에 일관된 디자인이 있는지 확인하세요
+- 최소 5개 이상의 슬라이드 필요
+- 색상과 폰트가 일관되게 사용되어야 합니다
+
+### Q: 생성 속도가 느립니다
+**A:** 슬라이드 수를 줄이거나 간단한 레이아웃 사용을 권장합니다
+- 한 번에 최대 50페이지까지 생성 권장
+- 복잡한 애니메이션은 자동으로 단순화됩니다
+
+### ⚠️ 제약사항
+
+- Canva MCP는 Canva Pro 계정 필요
+- 일부 고급 PowerPoint 효과는 변환 시 단순화될 수 있음
+- 한 번에 최대 50페이지까지 생성 권장
+    `
+  },
+  {
     id: 'ssa-apps-script-structure',
     title: 'Apps Script 파일 구조',
     category: 'SSA',
@@ -1099,6 +1268,27 @@ export default function ManualPage() {
           >
             <strong>SSA 프로젝트 구조</strong>
             <p className="text-sm text-muted-foreground">폴더 및 파일 구성</p>
+          </a>
+          <a
+            href="#proposal-generator-detailed"
+            className="p-3 bg-white rounded-lg hover:bg-blue-100 transition-colors"
+          >
+            <strong>제안서 생성 상세</strong>
+            <p className="text-sm text-muted-foreground">입력 방식, 기술 스택</p>
+          </a>
+          <a
+            href="#proposal-features"
+            className="p-3 bg-white rounded-lg hover:bg-blue-100 transition-colors"
+          >
+            <strong>제안서 주요 기능</strong>
+            <p className="text-sm text-muted-foreground">스타일 학습, 품질 진단</p>
+          </a>
+          <a
+            href="#proposal-examples"
+            className="p-3 bg-white rounded-lg hover:bg-blue-100 transition-colors"
+          >
+            <strong>제안서 사용 예시</strong>
+            <p className="text-sm text-muted-foreground">실제 활용 예제</p>
           </a>
         </div>
       </div>
