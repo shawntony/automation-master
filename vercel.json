@@ -1,11 +1,4 @@
 {
-  "version": 2,
-  "framework": "nextjs",
-  "buildCommand": "npm install && npm run build",
-  "devCommand": "npm run dev",
-  "installCommand": "npm install",
-  "outputDirectory": ".next",
-  "rootDirectory": "web",
   "github": {
     "silent": true
   },
