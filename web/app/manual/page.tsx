@@ -971,6 +971,268 @@ npm run proposal:import -- --scenario ./scenario.yaml --canva-template "business
     `
   },
   {
+    id: 'ssa-workflow-integration',
+    title: 'SSA 워크플로우 통합',
+    category: 'SSA',
+    keywords: ['워크플로우', 'workflow', '통합', '10단계', '활용'],
+    content: `
+## 🔄 워크플로우에서 SSA 활용
+
+AutomationMaster의 10단계 워크플로우가 각 단계에서 SSA 생성기를 자동으로 제안합니다:
+
+### 1-2단계: 아이디어 발굴 및 PRD 작성
+- AutomationMaster 가이드만 활용
+- SSA는 아직 사용하지 않음
+
+### 3단계: 시스템 기획서 작성
+✨ **SSA 백엔드 생성기 활용!**
+
+기획서에서 데이터 모델을 추출하여 Supabase 스키마 자동 생성
+
+\`\`\`
+"백엔드 생성기로 Supabase 스키마를 자동 생성하시겠습니까?"
+→ Yes → [SSA backend-generator 실행] → Supabase 스키마 생성 완료!
+\`\`\`
+
+### 4단계: UI/UX 설계
+✨ **SSA 프론트엔드 생성기 활용!**
+
+3단계에서 생성한 스키마로 UI 컴포넌트 자동 생성
+
+### 5단계: 기술 스택 선정
+✨ **SSA 풀스택 생성기 활용! (최고 추천)**
+
+완전한 앱을 5분 안에 생성:
+- Next.js 14 App Router 프로젝트
+- Supabase 연동 및 인증 시스템
+- 관리자 대시보드 (KPI 자동 감지)
+- 완벽한 CRUD 시스템
+- 실시간 기능
+- 배포 준비 (Vercel)
+
+### 6-7단계: 개발
+생성된 코드를 기반으로 커스터마이징
+
+### 8-10단계: 테스트, 배포, 운영
+AutomationMaster 가이드 활용
+    `
+  },
+  {
+    id: 'ssa-generators-detailed',
+    title: 'SSA 생성기 상세 가이드',
+    category: 'SSA',
+    keywords: ['생성기', '풀스택', '백엔드', '프론트엔드', '마이그레이션'],
+    content: `
+## 🎯 SSA 생성기 상세 가이드
+
+### 1. 풀스택 생성기 🚀
+**5분 안에 완전한 Next.js 14 애플리케이션 생성**
+
+**특징:**
+- AI 기반 스키마 분석
+- 지능형 아키텍처 설계
+- 실시간 대시보드
+- 완벽한 CRUD 시스템
+- 완전 인증 (소셜 로그인, MFA)
+- 배포 준비 완료
+
+**사용:**
+\`\`\`bash
+npm run ssa:fullstack -- generate --wizard
+\`\`\`
+
+### 2. 백엔드 생성기 🔧
+**V0/React 코드를 Supabase 백엔드로 자동 변환**
+
+**특징:**
+- 코드 분석 및 모델 추출
+- Supabase SQL 스키마 생성
+- RLS 보안 정책
+- TypeScript 타입 정의
+- 성능 최적화 (인덱스, View)
+- 실시간 구독 설정
+
+**사용:**
+\`\`\`bash
+npm run ssa:backend -- --file app.tsx --name "My Backend"
+\`\`\`
+
+**생성되는 것:**
+- \`migration.sql\` - 완전한 Supabase SQL 스키마
+- \`types.ts\` - TypeScript 타입 정의
+- \`SETUP_GUIDE.md\` - 단계별 설정 가이드
+
+### 3. 프론트엔드 생성기 🎨
+**Supabase 스키마에서 React/Next.js 애플리케이션 생성**
+
+**특징:**
+- React/Next.js 컴포넌트
+- shadcn/ui 통합
+- React Query 데이터 훅스
+- 인증 시스템
+- Middle Layer (Zustand, 미들웨어)
+- 원클릭 자동 설정
+
+**사용:**
+\`\`\`bash
+npm run ssa:frontend -- --file schema.sql --name "My Frontend" --ui shadcn --auto-setup
+\`\`\`
+
+**결과:** React/Next.js 완전한 관리자 패널
+
+### 4. Google Sheets 마이그레이션 📊
+**Google Sheets를 Supabase PostgreSQL로 자동 마이그레이션**
+
+**특징:**
+- 구조 자동 분석
+- 정규화 변환 (차원 + 팩트 테이블)
+- 관계 보존 (외래키)
+- 성능 최적화 (Materialized View)
+- 한국어 지원
+- 실시간 분석 뷰
+
+**사용:**
+\`\`\`bash
+npm run ssa:migrate
+\`\`\`
+
+**결과:** 정규화된 PostgreSQL 데이터베이스
+    `
+  },
+  {
+    id: 'ssa-scenarios',
+    title: 'SSA 사용 시나리오',
+    category: 'SSA',
+    keywords: ['시나리오', 'scenario', '예제', '활용', 'use case'],
+    content: `
+## 💡 SSA 사용 시나리오
+
+### 시나리오 1: 완전히 새로운 프로젝트
+
+\`\`\`bash
+# 1. 프로젝트 초기화
+npm run init
+
+# 2. 워크플로우 시작
+npm run workflow
+
+# 3. 3단계에서 기획서 작성 후
+#    → SSA 백엔드 생성기로 스키마 생성
+
+# 4. 5단계에서
+#    → SSA 풀스택 생성기로 완전한 앱 생성
+
+# 5. 생성된 앱에서 개발 시작!
+\`\`\`
+
+### 시나리오 2: 기존 Google Sheets 데이터 활용
+
+\`\`\`bash
+# 1. Google Sheets 마이그레이션
+npm run ssa:migrate
+
+# 2. 생성된 스키마로 프론트엔드 생성
+npm run ssa:frontend -- --file schema.sql --name "Data Manager"
+
+# 3. 완성!
+\`\`\`
+
+### 시나리오 3: V0 코드를 프로덕션 앱으로
+
+\`\`\`bash
+# 1. V0에서 받은 코드를 백엔드로 변환
+npm run ssa:backend -- --file v0-app.tsx --name "My Backend"
+
+# 2. 생성된 스키마로 프론트엔드 재생성
+npm run ssa:frontend -- --file migration.sql --name "My Frontend"
+
+# 3. 프로덕션 레디 앱 완성!
+\`\`\`
+
+### 시나리오 4: PDF 매출 보고서 자동화
+
+\`\`\`bash
+# 1. PDF 매출 보고서 추출
+npm run tools:pdf extract ./sales-report.pdf
+
+# 2. Google Sheets로 마이그레이션
+npm run tools:pdf migrate ./sales-report.pdf
+
+# 3. Supabase로 정규화 마이그레이션
+npm run ssa:migrate
+
+# 4. Telegram 봇으로 실시간 분석
+npm run tools:telegram
+# → Telegram에서 /report 실행
+
+# 5. AI 예측 및 PDF 리포트 생성
+# → Telegram에서 /generate_report 실행
+\`\`\`
+    `
+  },
+  {
+    id: 'ssa-tools',
+    title: 'SSA 추출 도구',
+    category: 'SSA',
+    keywords: ['도구', 'tools', 'pdf', 'hwp', 'telegram', '추출'],
+    content: `
+## 🔧 SSA 추출 도구
+
+### PDF 추출 도구 📄
+
+**기능:**
+- PDF에서 구조화된 데이터 추출
+- 매출 보고서 자동 파싱
+- 제품 카탈로그 추출
+- Google Sheets로 직접 마이그레이션
+- 일괄 처리 지원
+
+**웹 UI:** http://localhost:3000/tools/pdf
+
+### HWP 추출 도구 📝
+
+**기능:**
+- HWP 파일에서 텍스트 추출
+- Python Flask 서비스 자동 시작
+- 텍스트 파일로 저장
+- 일괄 처리 지원
+
+**웹 UI:** http://localhost:3000/tools/hwp
+
+### Telegram 봇 🤖
+
+**기능:**
+- 실시간 매출 분석 리포트
+- AI 기반 매출 예측
+- PDF 리포트 자동 생성
+- 이메일 자동 발송
+- 정기 리포트 스케줄링
+
+**사용:**
+\`\`\`bash
+npm run tools:telegram
+\`\`\`
+
+**명령어:**
+- \`/start\` - 봇 시작 및 환영 메시지
+- \`/report\` - 실시간 매출 분석 리포트
+- \`/predict\` - AI 기반 30일 매출 예측
+- \`/generate_report\` - PDF 리포트 생성
+- \`/send_report [이메일]\` - 리포트 이메일 발송
+- \`/schedule_report\` - 정기 리포트 설정
+- \`/status\` - 시스템 상태 확인
+- \`/help\` - 상세 도움말
+
+**설정:**
+\`\`\`bash
+# .env 파일에 추가
+TELEGRAM_BOT_TOKEN=your_bot_token
+TELEGRAM_ADMIN_CHAT_ID=your_chat_id
+BOT_POLLING=true
+\`\`\`
+    `
+  },
+  {
     id: 'ssa-apps-script-structure',
     title: 'Apps Script 파일 구조',
     category: 'SSA',
@@ -1289,6 +1551,34 @@ export default function ManualPage() {
           >
             <strong>제안서 사용 예시</strong>
             <p className="text-sm text-muted-foreground">실제 활용 예제</p>
+          </a>
+          <a
+            href="#ssa-workflow-integration"
+            className="p-3 bg-white rounded-lg hover:bg-blue-100 transition-colors"
+          >
+            <strong>워크플로우 통합</strong>
+            <p className="text-sm text-muted-foreground">10단계에서 SSA 활용</p>
+          </a>
+          <a
+            href="#ssa-generators-detailed"
+            className="p-3 bg-white rounded-lg hover:bg-blue-100 transition-colors"
+          >
+            <strong>생성기 상세 가이드</strong>
+            <p className="text-sm text-muted-foreground">Fullstack, Backend, Frontend</p>
+          </a>
+          <a
+            href="#ssa-scenarios"
+            className="p-3 bg-white rounded-lg hover:bg-blue-100 transition-colors"
+          >
+            <strong>사용 시나리오</strong>
+            <p className="text-sm text-muted-foreground">실제 프로젝트 예시</p>
+          </a>
+          <a
+            href="#ssa-tools"
+            className="p-3 bg-white rounded-lg hover:bg-blue-100 transition-colors"
+          >
+            <strong>추출 도구</strong>
+            <p className="text-sm text-muted-foreground">PDF, HWP, Telegram</p>
           </a>
         </div>
       </div>
