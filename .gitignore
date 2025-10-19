@@ -39,3 +39,17 @@ temp/
 
 # claudedocs (generated documentation)
 claudedocs/
+
+# Test files and screenshots
+test-*.js
+test-screenshots/
+*.code-workspace
+
+# MCP server data
+.serena/
+
+# Empty files
+nul
+
+# Claude settings (local only)
+.claude/settings.local.json
