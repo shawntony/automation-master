@@ -1,0 +1,21 @@
+{
+  "version": 2,
+  "framework": "nextjs",
+  "buildCommand": "cd web && npm install && npm run build",
+  "devCommand": "cd web && npm run dev",
+  "installCommand": "cd web && npm install",
+  "outputDirectory": "web/.next",
+  "github": {
+    "silent": true
+  },
+  "git": {
+    "deploymentEnabled": {
+      "develop": true,
+      "master": true
+    }
+  },
+  "env": {
+    "NEXT_PUBLIC_APP_NAME": "AutomationMaster",
+    "NEXT_PUBLIC_APP_VERSION": "1.1.0"
+  }
+}
