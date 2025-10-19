@@ -19,7 +19,8 @@ import {
   Code2,
   Zap,
   TrendingUp,
-  Presentation
+  Presentation,
+  BookOpen
 } from 'lucide-react'
 
 const navItems = [
@@ -114,6 +115,11 @@ const navItems = [
         icon: Settings
       }
     ]
+  },
+  {
+    name: '사용 매뉴얼',
+    href: '/manual',
+    icon: BookOpen
   },
   {
     name: '환경 설정',
