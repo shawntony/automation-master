@@ -21,7 +21,7 @@ export default function DashboardPage() {
   useEffect(() => {
     const loadProgress = async () => {
       try {
-        const data = await getData('/api/progress')
+        const data: any = await getData('/api/progress')
 
         if (data.success && data.progress) {
           const progress = data.progress
