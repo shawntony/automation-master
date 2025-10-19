@@ -59,7 +59,7 @@ export default function WorkflowPage() {
           setShowProjectSetup(false)
         } else {
           console.error('프로젝트 생성 실패:', data.error)
-          error('프로젝트 생성 실패', data.error)
+          error('프로젝트 생성 실패', data.error || '알 수 없는 오류가 발생했습니다.')
         }
       } catch (err) {
         console.error('API 호출 오류:', err)
