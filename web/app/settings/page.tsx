@@ -225,7 +225,6 @@ MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC...
 -----END PRIVATE KEY-----"
                 className="font-mono text-xs resize-none"
                 rows={6}
-                type={showSecrets.privateKey ? 'text' : 'password'}
               />
               <Button
                 variant="ghost"
