@@ -92,7 +92,7 @@ export default function MetabasePage() {
     setProcessingStep('Metabase 연결 확인 중...')
 
     try {
-      const data = await postData('/api/tools/metabase', {
+      const data: any = await postData('/api/tools/metabase', {
         action: 'test-metabase',
         url: config.metabaseUrl,
         email: config.adminEmail,
@@ -128,7 +128,7 @@ export default function MetabasePage() {
     setProcessingStep('Supabase 연결 확인 중...')
 
     try {
-      const data = await postData('/api/tools/metabase', {
+      const data: any = await postData('/api/tools/metabase', {
         action: 'test-supabase',
         host: config.supabaseHost,
         port: config.supabasePort,
@@ -169,7 +169,7 @@ export default function MetabasePage() {
       // Step 1: Add Supabase database to Metabase
       setProcessingStep('1/4: Supabase 데이터베이스 추가 중...')
 
-      const data = await postData('/api/tools/metabase', {
+      const data: any = await postData('/api/tools/metabase', {
         action: 'setup-dashboard',
         metabaseUrl: config.metabaseUrl,
         adminEmail: config.adminEmail,
