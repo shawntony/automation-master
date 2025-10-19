@@ -25,6 +25,8 @@ interface FormData {
   targetUsers: string
   competitors: string
   additionalInfo: string
+  pdrFile?: File | null
+  pdrContent?: string
 }
 
 export default function WorkflowPage() {
@@ -42,6 +44,26 @@ export default function WorkflowPage() {
   const [generatedPrompt, setGeneratedPrompt] = useState('')
   const [showPrompt, setShowPrompt] = useState(false)
   const [isGenerating, setIsGenerating] = useState(false)
+  const [uploadedPDR, setUploadedPDR] = useState<string>('')
+  const [isUploading, setIsUploading] = useState(false)
+
+  const handlePDRUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setIsUploading(true)
+    try {
+      const text = await file.text()
+      setUploadedPDR(text)
+      setFormData({ ...formData, pdrFile: file, pdrContent: text })
+      success('PDR 업로드 완료', `${file.name} 파일이 성공적으로 업로드되었습니다.`)
+    } catch (err) {
+      console.error('PDR 업로드 오류:', err)
+      error('업로드 실패', 'PDR 파일을 읽는 중 오류가 발생했습니다.')
+    } finally {
+      setIsUploading(false)
+    }
+  }
 
   const handleProjectSetup = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -86,13 +108,28 @@ export default function WorkflowPage() {
   }
 
   const generatePrompt = (step: number, data: FormData): string => {
-    return `# 단계 ${step}: ${steps[step - 1].title}
+    let basePrompt = `# 단계 ${step}: ${steps[step - 1].title}
 
 ## 프로젝트 정보
 - 프로젝트명: ${data.projectName}
 - 해결하려는 문제: ${data.problem || '[입력 필요]'}
 - 타겟 사용자: ${data.targetUsers || '[입력 필요]'}
-- 경쟁사: ${data.competitors || '[입력 필요]'}
+- 경쟁사: ${data.competitors || '[입력 필요]'}`
+
+    // PDR 단계일 경우 업로드된 PDR 내용 포함
+    if (step === 2 && data.pdrContent) {
+      basePrompt += `
+
+## 업로드된 PDR 문서
+
+\`\`\`
+${data.pdrContent}
+\`\`\`
+
+위 PDR 문서를 기반으로 시스템 기획서 작성을 진행해주세요.`
+    }
+
+    return basePrompt + `
 
 ## MCP 활용 작업
 
@@ -345,6 +382,81 @@ ${data.additionalInfo || '(없음)'}
                         placeholder="예: Linear, Jira, Trello (쉼표로 구분)"
                       />
                     </div>
+                  </>
+                )}
+
+                {currentStep === 2 && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        PDR 문서 업로드 *
+                      </label>
+                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition">
+                        <input
+                          type="file"
+                          accept=".txt,.md,.pdf,.docx"
+                          onChange={handlePDRUpload}
+                          className="hidden"
+                          id="pdr-upload"
+                        />
+                        <label
+                          htmlFor="pdr-upload"
+                          className="cursor-pointer"
+                        >
+                          {isUploading ? (
+                            <div className="flex flex-col items-center">
+                              <Loader2 className="h-10 w-10 text-blue-600 animate-spin mb-3" />
+                              <p className="text-sm text-gray-600">파일 업로드 중...</p>
+                            </div>
+                          ) : uploadedPDR ? (
+                            <div className="flex flex-col items-center">
+                              <CheckCircle2 className="h-10 w-10 text-green-600 mb-3" />
+                              <p className="text-sm font-medium text-gray-900">PDR 문서가 업로드되었습니다</p>
+                              <p className="text-xs text-gray-500 mt-1">
+                                {formData.pdrFile?.name} ({Math.round((formData.pdrFile?.size || 0) / 1024)}KB)
+                              </p>
+                              <p className="text-xs text-blue-600 mt-2">클릭하여 다른 파일 선택</p>
+                            </div>
+                          ) : (
+                            <div className="flex flex-col items-center">
+                              <svg
+                                className="h-10 w-10 text-gray-400 mb-3"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                                />
+                              </svg>
+                              <p className="text-sm font-medium text-gray-900">
+                                PDR 문서 파일을 업로드하세요
+                              </p>
+                              <p className="text-xs text-gray-500 mt-1">
+                                TXT, MD, PDF, DOCX 파일 지원
+                              </p>
+                            </div>
+                          )}
+                        </label>
+                      </div>
+                    </div>
+
+                    {uploadedPDR && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          업로드된 PDR 내용 미리보기
+                        </label>
+                        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 max-h-60 overflow-y-auto">
+                          <pre className="text-xs text-gray-700 whitespace-pre-wrap font-mono">
+                            {uploadedPDR.substring(0, 1000)}
+                            {uploadedPDR.length > 1000 && '\n\n... (생략됨)'}
+                          </pre>
+                        </div>
+                      </div>
+                    )}
                   </>
                 )}
 
