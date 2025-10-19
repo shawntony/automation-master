@@ -15,6 +15,7 @@ AutomationMaster의 10단계 개발 프로세스와 SSA(Smart Sheet Assistant)�
 - **풀스택 생성기**: 5분 안에 완전한 Next.js 14 앱 생성 ⚡
 - **백엔드 생성기**: V0/React → Supabase 백엔드 자동 변환
 - **프론트엔드 생성기**: Supabase 스키마 → React/Next.js 앱 생성
+- **Apps Script 생성기**: Google Sheets 수식 → Apps Script 자동 변환 🆕
 - **마이그레이션**: Google Sheets → Supabase PostgreSQL
 
 > 📖 **SSA 통합 가이드**: [SSA_INTEGRATION.md](./SSA_INTEGRATION.md)

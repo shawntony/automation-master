@@ -15,7 +15,11 @@ import {
   FileType,
   Cog,
   MessageCircle,
-  BarChart3
+  BarChart3,
+  Code2,
+  Zap,
+  TrendingUp,
+  Presentation
 } from 'lucide-react'
 
 const navItems = [
@@ -30,7 +34,7 @@ const navItems = [
     icon: Workflow
   },
   {
-    name: '생성기',
+    name: '웹앱 생성기',
     icon: Sparkles,
     children: [
       {
@@ -52,14 +56,37 @@ const navItems = [
     ]
   },
   {
-    name: '도구',
-    icon: Wrench,
+    name: '자동화 도구',
+    icon: Zap,
     children: [
+      {
+        name: 'Apps Script 생성기',
+        href: '/tools/appscript',
+        icon: Code2,
+        badge: 'NEW'
+      },
+      {
+        name: '제안서 자동 생성',
+        href: '/tools/proposal',
+        icon: Presentation,
+        badge: 'NEW'
+      },
       {
         name: 'Google Sheets 마이그레이션',
         href: '/tools/migration',
         icon: FileSpreadsheet
       },
+      {
+        name: 'Telegram 봇',
+        href: '/tools/telegram',
+        icon: MessageCircle
+      }
+    ]
+  },
+  {
+    name: '데이터 추출',
+    icon: Wrench,
+    children: [
       {
         name: 'PDF 추출 도구',
         href: '/tools/pdf',
@@ -69,23 +96,24 @@ const navItems = [
         name: 'HWP 추출 도구',
         href: '/tools/hwp',
         icon: FileType
-      },
-      {
-        name: 'Telegram 봇',
-        href: '/tools/telegram',
-        icon: MessageCircle
-      },
-      {
-        name: 'Metabase 대시보드',
-        href: '/tools/metabase',
-        icon: BarChart3
       }
     ]
   },
   {
-    name: '대시보드',
-    href: '/dashboard',
-    icon: Settings
+    name: '분석 & 리포트',
+    icon: TrendingUp,
+    children: [
+      {
+        name: 'Metabase 대시보드',
+        href: '/tools/metabase',
+        icon: BarChart3
+      },
+      {
+        name: '프로젝트 대시보드',
+        href: '/dashboard',
+        icon: Settings
+      }
+    ]
   },
   {
     name: '환경 설정',
