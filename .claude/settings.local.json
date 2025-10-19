@@ -38,7 +38,10 @@
       "Bash(npx playwright test:*)",
       "Bash(npm run test:chromium:*)",
       "Read(//c/Users/gram/**)",
-      "Bash(git restore web/playwright-report/index.html web/test-results/.last-run.json web/test-results/results.json)"
+      "Bash(git restore web/playwright-report/index.html web/test-results/.last-run.json web/test-results/results.json)",
+      "Bash(npx vercel --version)",
+      "Bash(npx vercel --prod)",
+      "Bash(npx vercel --prod --yes)"
     ],
     "deny": [],
     "ask": []

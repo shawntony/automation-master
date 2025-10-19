@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import Storage from '@/lib/storage'
+const Storage = require('@/lib/storage')
 
 export async function POST(request: Request) {
   try {
