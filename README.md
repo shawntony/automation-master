@@ -338,6 +338,69 @@ npm run env -- --target ../my-other-project
 10단계 완료 → 프로젝트 완성! 🎉
 ```
 
+## 🚀 배포
+
+### Vercel 자동 배포 (권장)
+
+이 프로젝트는 **main 브랜치**에 푸시하면 자동으로 Vercel에 배포됩니다.
+
+#### GitHub 연동 배포 설정
+
+1. https://vercel.com 접속 및 로그인
+2. "New Project" 클릭
+3. GitHub 저장소 임포트: `shawntony/automation-master`
+4. 프로젝트 설정:
+   - **Framework Preset**: Next.js
+   - **Root Directory**: `web`
+   - **Build Command**: `npm run build`
+   - **Output Directory**: `.next`
+   - **Install Command**: `npm install`
+5. **Production Branch**: `main` (중요!)
+6. "Deploy" 클릭
+
+#### GitHub Actions 자동 배포
+
+`.github/workflows/deploy.yml`이 설정되어 있어 main 브랜치에 푸시하면 자동으로 배포됩니다.
+
+**필요한 GitHub Secrets:**
+- `VERCEL_TOKEN`: Vercel 계정 토큰
+- `VERCEL_ORG_ID`: Vercel 조직 ID
+- `VERCEL_PROJECT_ID`: Vercel 프로젝트 ID
+
+#### Vercel CLI 배포
+
+```bash
+# Vercel CLI 설치
+npm i -g vercel
+
+# 프로덕션 배포 (main 브랜치에서)
+git checkout main
+vercel --prod
+```
+
+### 브랜치 전략
+
+- **main**: 프로덕션 배포 브랜치 (Vercel 자동 배포)
+- **develop**: 개발 브랜치
+- **master**: 레거시 브랜치
+
+**배포 프로세스:**
+```bash
+# 1. develop 브랜치에서 개발
+git checkout develop
+# ... 작업 ...
+
+# 2. develop에 커밋 및 푸시
+git add .
+git commit -m "feat: new feature"
+git push origin develop
+
+# 3. main 브랜치로 머지 (배포)
+git checkout main
+git merge develop
+git push origin main  # 자동 배포 트리거!
+```
+
 ## 🔧 문제 해결
 
 ### 워크플로우가 계속 반복되나요?

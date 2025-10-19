@@ -10,10 +10,12 @@
   },
   "git": {
     "deploymentEnabled": {
-      "develop": true,
-      "master": true
+      "main": true,
+      "develop": false,
+      "master": false
     }
   },
+  "regions": ["icn1"],
   "env": {
     "NEXT_PUBLIC_APP_NAME": "AutomationMaster",
     "NEXT_PUBLIC_APP_VERSION": "1.1.0"
