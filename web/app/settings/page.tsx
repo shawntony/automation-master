@@ -38,10 +38,10 @@ export default function SettingsPage() {
   const checkServicesStatus = async () => {
     try {
       // Check Google Sheets configuration
-      const sheetsData = await getData('/api/tools/sheets?action=check-config')
+      const sheetsData: any = await getData('/api/tools/sheets?action=check-config')
 
       // Check Migration configuration
-      const migrationData = await getData('/api/tools/migration?action=check-env')
+      const migrationData: any = await getData('/api/tools/migration?action=check-env')
 
       setConfigStatus({
         googleSheets: sheetsData.configured || false,

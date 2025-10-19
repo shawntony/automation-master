@@ -67,7 +67,7 @@ export default function HWPToolPage() {
 
   const checkServiceStatus = async () => {
     try {
-      const data = await getData('/api/tools/hwp?action=health')
+      const data: any = await getData('/api/tools/hwp?action=health')
       setServiceStatus(data.serviceRunning ? 'running' : 'stopped')
     } catch (err) {
       setServiceStatus('stopped')

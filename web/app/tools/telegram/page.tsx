@@ -116,7 +116,7 @@ export default function TelegramBotPage() {
 
   const checkBotStatus = async () => {
     try {
-      const data = await getData('/api/tools/telegram?action=status')
+      const data: any = await getData('/api/tools/telegram?action=status')
       if (data.success) {
         setStatus(data.status)
       }

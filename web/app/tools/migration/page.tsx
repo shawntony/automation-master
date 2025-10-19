@@ -22,7 +22,7 @@ export default function MigrationToolsPage() {
 
   const checkEnvironment = async () => {
     try {
-      const data = await getData('/api/tools/migration?action=check-env')
+      const data: any = await getData('/api/tools/migration?action=check-env')
       setEnvStatus(data.environment)
     } catch (err) {
       setEnvStatus(null)

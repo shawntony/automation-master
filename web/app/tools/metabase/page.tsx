@@ -69,7 +69,7 @@ export default function MetabasePage() {
 
   const checkStatus = async () => {
     try {
-      const data = await getData('/api/tools/metabase?action=status')
+      const data: any = await getData('/api/tools/metabase?action=status')
       if (data.success) {
         setStatus(data.status)
         if (data.dashboardUrl) {
