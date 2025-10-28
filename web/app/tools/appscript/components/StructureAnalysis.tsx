@@ -13,6 +13,12 @@ interface StructureAnalysisProps {
     description: {
       overview: string
       purpose: string
+      creatorIntent?: {
+        mainGoal: string
+        businessContext: string
+        workflowDesign: string
+        painPoints: string[]
+      }
       dataFlow: string
       sheetDescriptions: Array<{
         sheetName: string
@@ -50,7 +56,14 @@ export function StructureAnalysis({ structureAnalysis }: StructureAnalysisProps)
   const mermaidRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    if (mermaidRef.current && structureAnalysis.diagram.mermaid) {
+    let isMounted = true
+
+    if (mermaidRef.current && structureAnalysis?.diagram?.mermaid) {
+      // 초기 상태: 로딩 메시지 표시
+      if (mermaidRef.current) {
+        mermaidRef.current.innerHTML = '<p class="text-gray-500">다이어그램 로딩 중...</p>'
+      }
+
       // Mermaid 초기화
       mermaid.initialize({
         startOnLoad: true,
@@ -65,24 +78,42 @@ export function StructureAnalysis({ structureAnalysis }: StructureAnalysisProps)
       // 다이어그램 렌더링
       const renderDiagram = async () => {
         try {
-          const { svg } = await mermaid.render(
-            'mermaid-diagram',
+          // 고유 ID 생성 (중복 방지)
+          const uniqueId = `mermaid-diagram-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+
+          const result = await mermaid.render(
+            uniqueId,
             structureAnalysis.diagram.mermaid
           )
-          if (mermaidRef.current) {
-            mermaidRef.current.innerHTML = svg
+
+          // Mermaid render()는 문자열을 직접 반환하거나 {svg: string} 객체를 반환할 수 있음
+          const svgContent = typeof result === 'string' ? result : result.svg
+
+          // 컴포넌트가 여전히 마운트되어 있을 때만 업데이트
+          if (isMounted && mermaidRef.current && svgContent) {
+            mermaidRef.current.innerHTML = svgContent
           }
         } catch (error) {
-          console.error('Mermaid rendering error:', error)
-          if (mermaidRef.current) {
+          console.error('[Mermaid] Rendering error:', error)
+          if (isMounted && mermaidRef.current) {
             mermaidRef.current.innerHTML = '<p class="text-red-500">다이어그램을 렌더링할 수 없습니다</p>'
           }
         }
       }
 
       renderDiagram()
+    } else {
+      // 데이터가 없으면 빈 상태로
+      if (mermaidRef.current) {
+        mermaidRef.current.innerHTML = ''
+      }
     }
-  }, [structureAnalysis.diagram.mermaid])
+
+    // 클린업 함수
+    return () => {
+      isMounted = false
+    }
+  }, [structureAnalysis?.diagram?.mermaid])
 
   const { description, structure } = structureAnalysis
 
@@ -123,67 +154,69 @@ export function StructureAnalysis({ structureAnalysis }: StructureAnalysisProps)
       </div>
 
       {/* 제작자 의도 분석 */}
-      <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-lg p-6">
-        <div className="flex items-start gap-3">
-          <div className="p-2 bg-purple-100 rounded-lg">
-            <Lightbulb className="h-6 w-6 text-purple-600" />
-          </div>
-          <div className="flex-1">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              🎯 제작자의 의도
-            </h3>
-
-            {/* 주요 목표 */}
-            <div className="mb-4">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-sm font-semibold text-purple-700">주요 목표</span>
-              </div>
-              <p className="text-gray-700 bg-white/70 rounded-lg p-3">
-                {description.creatorIntent.mainGoal}
-              </p>
+      {description.creatorIntent && (
+        <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-lg p-6">
+          <div className="flex items-start gap-3">
+            <div className="p-2 bg-purple-100 rounded-lg">
+              <Lightbulb className="h-6 w-6 text-purple-600" />
             </div>
+            <div className="flex-1">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                🎯 제작자의 의도
+              </h3>
 
-            {/* 비즈니스 맥락 */}
-            <div className="mb-4">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-sm font-semibold text-purple-700">비즈니스 맥락</span>
-              </div>
-              <p className="text-gray-700 bg-white/70 rounded-lg p-3">
-                {description.creatorIntent.businessContext}
-              </p>
-            </div>
-
-            {/* 워크플로우 설계 의도 */}
-            <div className="mb-4">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-sm font-semibold text-purple-700">워크플로우 설계 의도</span>
-              </div>
-              <p className="text-gray-700 bg-white/70 rounded-lg p-3">
-                {description.creatorIntent.workflowDesign}
-              </p>
-            </div>
-
-            {/* 해결하려는 문제점들 */}
-            {description.creatorIntent.painPoints.length > 0 && (
-              <div>
+              {/* 주요 목표 */}
+              <div className="mb-4">
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="text-sm font-semibold text-purple-700">해결하려는 문제점</span>
+                  <span className="text-sm font-semibold text-purple-700">주요 목표</span>
                 </div>
-                <div className="bg-white/70 rounded-lg p-3">
-                  <ul className="space-y-2">
-                    {description.creatorIntent.painPoints.map((point: string, index: number) => (
-                      <li key={index} className="flex items-start gap-2 text-sm text-gray-700">
-                        <AlertCircle className="h-4 w-4 text-orange-500 mt-0.5 flex-shrink-0" />
-                        <span>{point}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+                <p className="text-gray-700 bg-white/70 rounded-lg p-3">
+                  {description.creatorIntent.mainGoal}
+                </p>
               </div>
-            )}
+
+              {/* 비즈니스 맥락 */}
+              <div className="mb-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-sm font-semibold text-purple-700">비즈니스 맥락</span>
+                </div>
+                <p className="text-gray-700 bg-white/70 rounded-lg p-3">
+                  {description.creatorIntent.businessContext}
+                </p>
+              </div>
+
+              {/* 워크플로우 설계 의도 */}
+              <div className="mb-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-sm font-semibold text-purple-700">워크플로우 설계 의도</span>
+                </div>
+                <p className="text-gray-700 bg-white/70 rounded-lg p-3">
+                  {description.creatorIntent.workflowDesign}
+                </p>
+              </div>
+
+              {/* 해결하려는 문제점들 */}
+              {description.creatorIntent.painPoints && description.creatorIntent.painPoints.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-sm font-semibold text-purple-700">해결하려는 문제점</span>
+                  </div>
+                  <div className="bg-white/70 rounded-lg p-3">
+                    <ul className="space-y-2">
+                      {description.creatorIntent.painPoints.map((point: string, index: number) => (
+                        <li key={index} className="flex items-start gap-2 text-sm text-gray-700">
+                          <AlertCircle className="h-4 w-4 text-orange-500 mt-0.5 flex-shrink-0" />
+                          <span>{point}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* 복잡도 평가 */}
       <div className={`border rounded-lg p-4 ${complexityColors[description.complexity.level]}`}>
@@ -212,10 +245,14 @@ export function StructureAnalysis({ structureAnalysis }: StructureAnalysisProps)
         <div
           ref={mermaidRef}
           className="mermaid-container overflow-x-auto bg-gray-50 rounded-lg p-4"
-        />
+        >
+          {/* Mermaid가 여기에 렌더링됩니다 */}
+        </div>
         <div className="mt-3 text-sm text-gray-500">
           <Info className="h-4 w-4 inline mr-1" />
           파란색: 데이터 시트 | 주황색: 복잡한 계산 시트 | 보라색: 일반 시트
+          <br />
+          화살표 방향: 데이터 제공자 → 데이터 사용자 (코드 생성 시 데이터 시트부터 구현)
         </div>
       </div>
 

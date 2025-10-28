@@ -463,26 +463,27 @@ function generateMermaidDiagram(
 
   lines.push('')
 
-  // 관계 정의
+  // 관계 정의 (데이터 제공 방향으로 화살표 표시)
   relationships.forEach(rel => {
-    const fromId = sanitizeNodeId(rel.from)
-    const toId = sanitizeNodeId(rel.to)
+    // 화살표를 반대로: 데이터를 제공하는 시트 → 데이터를 받는 시트
+    const fromId = sanitizeNodeId(rel.to)  // 데이터 제공자 (원본 to)
+    const toId = sanitizeNodeId(rel.from)  // 데이터 소비자 (원본 from)
 
     let arrow = '-->'
     let label = ''
 
     switch (rel.type) {
       case 'lookup':
-        arrow = '-.조회.->'
-        label = '조회'
+        arrow = '-.제공.->'
+        label = '제공'
         break
       case 'formula-dependency':
-        arrow = '-->|참조|'
-        label = '참조'
+        arrow = '-->|제공|'
+        label = '제공'
         break
       case 'data-reference':
-        arrow = '-->|데이터|'
-        label = '데이터'
+        arrow = '-->|제공|'
+        label = '제공'
         break
     }
 
