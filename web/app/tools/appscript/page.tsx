@@ -334,6 +334,26 @@ export default function AppsScriptGeneratorPage() {
                   <StructureAnalysis structureAnalysis={analysisResult.structureAnalysis} />
                 )}
 
+                {/* 샘플링 경고 메시지 */}
+                {analysisResult.samplingInfo?.used && (
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                    <div className="flex items-start gap-3">
+                      <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <div className="font-semibold text-amber-900 mb-1">
+                          샘플링 분석 수행됨
+                        </div>
+                        <p className="text-sm text-amber-800 mb-2">
+                          {analysisResult.samplingInfo.reason}
+                        </p>
+                        <p className="text-xs text-amber-700">
+                          분석 범위: 최대 {analysisResult.samplingInfo.limits.maxRows}행 × {analysisResult.samplingInfo.limits.maxColumns}열
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Summary Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <div className="bg-white border rounded-lg p-4">

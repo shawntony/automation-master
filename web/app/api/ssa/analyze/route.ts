@@ -90,10 +90,17 @@ export async function POST(request: NextRequest) {
       let formulaTypes: Record<string, number> = {}
 
       try {
-        // 작은 범위로 나눠서 가져오기 (20행씩)
-        const batchSize = 20
-        const maxRows = Math.min(rowCount, 1000) // 최대 1000행까지 분석
-        const maxCol = 'ZZ' // ZZ열까지 분석 (최대 702열)
+        // 대용량 스프레드시트를 위한 샘플링 전략
+        const batchSize = 10 // 배치 크기 축소
+        const maxRows = Math.min(rowCount, 200) // 최대 200행까지 분석 (메모리 오버플로우 방지)
+        const maxCol = 'M' // M열까지 분석 (최대 13열로 축소)
+
+        // 큰 시트는 샘플링만 수행
+        const isSampling = rowCount > 200 || columnCount > 13
+
+        if (isSampling) {
+          console.log(`[${sheetName}] Large sheet detected (${rowCount}x${columnCount}), using sampling strategy`)
+        }
 
         for (let startRow = 0; startRow < maxRows; startRow += batchSize) {
           const endRow = Math.min(startRow + batchSize, maxRows)
@@ -101,7 +108,7 @@ export async function POST(request: NextRequest) {
 
           try {
             const batchData = await sheets.spreadsheets.get({
-              spreadsheetId: sheetId, // 올바른 spreadsheet ID 사용
+              spreadsheetId: sheetId,
               ranges: [range],
               includeGridData: true,
               fields: 'sheets(data(rowData(values(userEnteredValue))))'
@@ -116,7 +123,6 @@ export async function POST(request: NextRequest) {
 
                 if (formulaValue) {
                   // 수식 함수명 추출 (셀 참조 제외)
-                  // =SUM(...), =VLOOKUP(...) 형태만 매칭
                   const typeMatch = formulaValue.match(/^=([A-Z가-힣_]+)\s*\(/)
                   const type = typeMatch ? typeMatch[1] : 'CUSTOM'
 
@@ -132,11 +138,16 @@ export async function POST(request: NextRequest) {
               })
             })
 
-            // 작은 딜레이 추가 (API rate limit 방지)
-            await new Promise(resolve => setTimeout(resolve, 100))
+            // API rate limit 방지 딜레이
+            await new Promise(resolve => setTimeout(resolve, 150))
           } catch (batchError: any) {
+            // 메모리 오버플로우 에러 특별 처리
+            if (batchError.code === 'ERR_STRING_TOO_LONG' || batchError.message?.includes('string longer than')) {
+              console.error(`[${sheetName}] Memory overflow detected, stopping further batch processing`)
+              break
+            }
             console.error(`Error fetching batch ${startRow}-${endRow} for ${sheetName}:`, batchError.message)
-            break // 에러 발생 시 다음 시트로
+            break
           }
         }
       } catch (error: any) {
@@ -200,6 +211,11 @@ export async function POST(request: NextRequest) {
       dependencies.length * 5
     ))
 
+    // 샘플링 여부 확인
+    const usedSampling = analyzedSheets.some(sheet =>
+      sheet.rowCount > 200 || sheet.columnCount > 13
+    )
+
     const analysis = {
       spreadsheetId: sheetId,
       spreadsheetTitle: spreadsheet.data.properties?.title || 'Untitled',
@@ -207,7 +223,15 @@ export async function POST(request: NextRequest) {
       totalFormulas,
       formulaTypes: allFormulaTypes,
       dependencies,
-      complexity
+      complexity,
+      samplingInfo: usedSampling ? {
+        used: true,
+        reason: '대용량 스프레드시트로 인해 샘플링 분석을 수행했습니다',
+        limits: {
+          maxRows: 200,
+          maxColumns: 13
+        }
+      } : undefined
     }
 
     // 🤖 AI Agent를 사용한 구조 분석 추가
