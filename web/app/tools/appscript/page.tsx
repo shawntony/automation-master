@@ -1,9 +1,10 @@
 'use client'
 
 import { useState } from 'react'
-import { Code2, Upload, Download, Play, FileSpreadsheet, Zap, CheckCircle2, AlertCircle, Loader2, Rocket } from 'lucide-react'
+import { Code2, Upload, Download, Play, FileSpreadsheet, Zap, CheckCircle2, AlertCircle, Loader2, Rocket, GitBranch } from 'lucide-react'
 import { DeployWizard } from './components/DeployWizard'
 import { StructureAnalysis } from './components/StructureAnalysis'
+import { MigrationWizard } from './components/MigrationWizard'
 
 export default function AppsScriptGeneratorPage() {
   const [spreadsheetUrl, setSpreadsheetUrl] = useState('')
@@ -14,6 +15,7 @@ export default function AppsScriptGeneratorPage() {
   const [isGenerating, setIsGenerating] = useState(false)
   const [activeTab, setActiveTab] = useState('analyze')
   const [showDeployWizard, setShowDeployWizard] = useState(false)
+  const [showMigrationWizard, setShowMigrationWizard] = useState(false)
 
   const handleAnalyze = async () => {
     if (!spreadsheetUrl) {
@@ -310,23 +312,32 @@ export default function AppsScriptGeneratorPage() {
               <div className="space-y-6">
                 <div className="flex items-center justify-between">
                   <h2 className="text-xl font-semibold">분석 결과</h2>
-                  <button
-                    onClick={handleGenerate}
-                    disabled={isGenerating}
-                    className="flex items-center gap-2 px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-300 transition"
-                  >
-                    {isGenerating ? (
-                      <>
-                        <Loader2 className="h-5 w-5 animate-spin" />
-                        생성 중...
-                      </>
-                    ) : (
-                      <>
-                        <Zap className="h-5 w-5" />
-                        Apps Script 코드 생성
-                      </>
-                    )}
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setShowMigrationWizard(true)}
+                      className="flex items-center gap-2 px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
+                    >
+                      <GitBranch className="h-5 w-5" />
+                      점진적 마이그레이션
+                    </button>
+                    <button
+                      onClick={handleGenerate}
+                      disabled={isGenerating}
+                      className="flex items-center gap-2 px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-300 transition"
+                    >
+                      {isGenerating ? (
+                        <>
+                          <Loader2 className="h-5 w-5 animate-spin" />
+                          생성 중...
+                        </>
+                      ) : (
+                        <>
+                          <Zap className="h-5 w-5" />
+                          Apps Script 코드 생성
+                        </>
+                      )}
+                    </button>
+                  </div>
                 </div>
 
                 {/* AI 구조 분석 (가장 먼저 표시) */}
@@ -509,6 +520,19 @@ export default function AppsScriptGeneratorPage() {
             generatedCode={generatedCode}
             analysisResult={analysisResult}
             onClose={() => setShowDeployWizard(false)}
+          />
+        )}
+
+        {/* Migration Wizard Modal */}
+        {showMigrationWizard && analysisResult && (
+          <MigrationWizard
+            analysisResult={analysisResult}
+            onComplete={(result) => {
+              console.log('[Migration] Complete:', result)
+              setShowMigrationWizard(false)
+              alert(`마이그레이션 완료!\n완료: ${result.completedSheets}개 시트\n실패: ${result.failedSheets}개 시트`)
+            }}
+            onCancel={() => setShowMigrationWizard(false)}
           />
         )}
 
