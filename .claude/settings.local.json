@@ -41,7 +41,12 @@
       "Bash(git restore web/playwright-report/index.html web/test-results/.last-run.json web/test-results/results.json)",
       "Bash(npx vercel --version)",
       "Bash(npx vercel --prod)",
-      "Bash(npx vercel --prod --yes)"
+      "Bash(npx vercel --prod --yes)",
+      "Bash(where vercel)",
+      "Bash(vercel --prod)",
+      "Bash(vercel ls)",
+      "Bash(vercel --prod --yes)",
+      "Bash(npm run web:install:*)"
     ],
     "deny": [],
     "ask": []

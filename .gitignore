@@ -53,3 +53,4 @@ nul
 
 # Claude settings (local only)
 .claude/settings.local.json
+.vercel

@@ -35,8 +35,13 @@ AutomationMaster의 10단계 개발 프로세스와 SSA(Smart Sheet Assistant)�
 
 ### 🚀 SSA 코드 생성 엔진
 - ⭐ **풀스택/백엔드/프론트엔드 자동 생성** - Supabase 스키마 기반 완전한 앱 생성
-- 📝 **Apps Script 생성기** - Google Sheets 수식을 Apps Script로 자동 변환
-- 🎨 **제안서 자동 생성** 🆕 - AI 기반 프레젠테이션 자동화 (4시간 → 50분, 79% 단축)
+- 📝 **Apps Script 생성기** 🆕 - Google Sheets 수식을 Apps Script로 자동 변환
+  - 🤖 **AI 구조 분석**: 스프레드시트 구조를 시각적 다이어그램과 자연어로 설명
+  - 🎯 **제작자 의도 추론**: AI가 제작자의 목표, 비즈니스 맥락, 해결하려는 문제 파악
+  - 📊 **Mermaid 다이어그램**: 시트 간 관계를 자동으로 시각화
+  - ⚙️ **프로젝트 타입 선택**: 스프레드시트 귀속 또는 독립 실행형 선택 가능
+  - 🔄 **자동 배포**: clasp 통합으로 원클릭 배포
+- 🎨 **제안서 자동 생성** - AI 기반 프레젠테이션 자동화 (4시간 → 50분, 79% 단축)
   - AI 스타일 학습: 브랜드 스타일 100% 재현
   - 직접 임포트: Canva 템플릿 활용
   - PPT 진단/개선: D등급 → A등급 자동 업그레이드
@@ -107,8 +112,12 @@ npm run web:dev
 - 🔄 **웹 기반 워크플로우**: 폼 입력 → 프롬프트 생성 → 클립보드 복사
 - 🎨 **현대적인 UI/UX**: Next.js 14 + Tailwind CSS 기반 반응형 디자인
 - ⭐ **SSA 생성기**: 풀스택/백엔드/프론트엔드 생성 웹 UI
-- 📝 **Apps Script 생성기**: `/tools/appscript` - Google Sheets 수식 자동 변환
-- 🎨 **제안서 자동 생성**: `/tools/proposal` - AI 기반 프레젠테이션 자동화 🆕
+- 📝 **Apps Script 생성기** 🆕: `/tools/appscript` - Google Sheets → Apps Script 자동 변환
+  - AI 구조 분석 및 제작자 의도 추론
+  - Mermaid 다이어그램 자동 생성
+  - 프로젝트 타입 선택 (귀속/독립)
+  - clasp 자동 배포 (OAuth 인증 포함)
+- 🎨 **제안서 자동 생성**: `/tools/proposal` - AI 기반 프레젠테이션 자동화
 - 🛠️ **SSA 도구**: Google Sheets 마이그레이션 도구
 
 > 📖 **웹앱 가이드**: [WEB_APP_GUIDE.md](./WEB_APP_GUIDE.md) 참고

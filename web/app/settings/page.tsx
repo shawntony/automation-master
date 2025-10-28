@@ -37,18 +37,21 @@ export default function SettingsPage() {
 
   const checkServicesStatus = async () => {
     try {
-      // Check Google Sheets configuration
-      const sheetsData: any = await getData('/api/tools/sheets?action=check-config')
+      // Check current environment variables
+      const response = await fetch('/api/settings')
+      const data = await response.json()
 
-      // Check Migration configuration
-      const migrationData: any = await getData('/api/tools/migration?action=check-env')
-
-      setConfigStatus({
-        googleSheets: sheetsData.configured || false,
-        googleSheetsDetail: sheetsData.environment || {},
-        supabase: migrationData.environment?.supabaseConfig || false,
-        overall: (sheetsData.configured && migrationData.environment?.supabaseConfig) || false
-      })
+      if (data.success) {
+        setConfigStatus({
+          googleSheets: data.config.googleSheets.configured,
+          googleSheetsDetail: data.config.googleSheets,
+          supabase: data.config.supabase.configured,
+          supabaseDetail: data.config.supabase,
+          overall: data.overall
+        })
+      } else {
+        throw new Error(data.error)
+      }
     } catch (error) {
       console.error('Failed to check services status:', error)
       setConfigStatus({
@@ -64,15 +67,30 @@ export default function SettingsPage() {
     setMessage(null)
 
     try {
-      setMessage({
-        type: 'success',
-        text: '설정이 저장되었습니다. 환경 변수를 적용하려면 서버를 재시작해주세요.'
+      // API를 통해 .env.local 파일에 저장
+      const response = await fetch('/api/settings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(config)
       })
 
-      // Recheck status after save
-      setTimeout(() => {
-        checkServicesStatus()
-      }, 1000)
+      const data = await response.json()
+
+      if (data.success) {
+        setMessage({
+          type: 'success',
+          text: data.message || '설정이 저장되었습니다. 서버를 재시작해주세요.'
+        })
+
+        // Recheck status after save
+        setTimeout(() => {
+          checkServicesStatus()
+        }, 1000)
+      } else {
+        throw new Error(data.error || '설정 저장에 실패했습니다')
+      }
 
     } catch (error: any) {
       setMessage({

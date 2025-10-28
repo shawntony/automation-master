@@ -1,15 +1,19 @@
 'use client'
 
 import { useState } from 'react'
-import { Code2, Upload, Download, Play, FileSpreadsheet, Zap, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react'
+import { Code2, Upload, Download, Play, FileSpreadsheet, Zap, CheckCircle2, AlertCircle, Loader2, Rocket } from 'lucide-react'
+import { DeployWizard } from './components/DeployWizard'
+import { StructureAnalysis } from './components/StructureAnalysis'
 
 export default function AppsScriptGeneratorPage() {
   const [spreadsheetUrl, setSpreadsheetUrl] = useState('')
+  const [projectType, setProjectType] = useState<'sheets' | 'standalone'>('sheets') // 기본값: 스프레드시트 귀속
   const [analysisResult, setAnalysisResult] = useState<any>(null)
   const [generatedCode, setGeneratedCode] = useState<any>(null)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [isGenerating, setIsGenerating] = useState(false)
   const [activeTab, setActiveTab] = useState('analyze')
+  const [showDeployWizard, setShowDeployWizard] = useState(false)
 
   const handleAnalyze = async () => {
     if (!spreadsheetUrl) {
@@ -22,11 +26,15 @@ export default function AppsScriptGeneratorPage() {
       const response = await fetch('/api/ssa/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: spreadsheetUrl })
+        body: JSON.stringify({
+          url: spreadsheetUrl,
+          projectType // 프로젝트 타입 전달
+        })
       })
 
       const data = await response.json()
-      setAnalysisResult(data)
+      // 프로젝트 타입을 분석 결과에 포함
+      setAnalysisResult({ ...data, projectType })
       setActiveTab('result')
     } catch (error) {
       console.error('분석 실패:', error)
@@ -61,17 +69,47 @@ export default function AppsScriptGeneratorPage() {
     }
   }
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     if (!generatedCode) return
 
-    // ZIP 파일로 다운로드
-    const blob = new Blob([JSON.stringify(generatedCode, null, 2)], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'apps-script-project.json'
-    a.click()
-    URL.revokeObjectURL(url)
+    try {
+      // ZIP 파일 생성을 위해 API 호출
+      const response = await fetch('/api/ssa/download', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          files: generatedCode.files,
+          spreadsheetTitle: analysisResult?.spreadsheetTitle || 'apps-script-project'
+        })
+      })
+
+      const data = await response.json()
+
+      if (!data.success) {
+        throw new Error(data.error || 'ZIP 파일 생성 실패')
+      }
+
+      // JSZip을 사용하여 클라이언트에서 ZIP 생성
+      const JSZip = (await import('jszip')).default
+      const zip = new JSZip()
+
+      // 모든 파일을 ZIP에 추가
+      Object.entries(data.files).forEach(([filename, content]) => {
+        zip.file(filename, content as string)
+      })
+
+      // ZIP 파일 생성 및 다운로드
+      const blob = await zip.generateAsync({ type: 'blob' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${data.projectName}.zip`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch (error) {
+      console.error('다운로드 실패:', error)
+      alert('ZIP 파일 다운로드에 실패했습니다')
+    }
   }
 
   return (
@@ -154,6 +192,78 @@ export default function AppsScriptGeneratorPage() {
                       </p>
                     </div>
 
+                    {/* Project Type Selection */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-3">
+                        프로젝트 타입 선택
+                      </label>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setProjectType('sheets')}
+                          className={`p-4 border-2 rounded-lg text-left transition ${
+                            projectType === 'sheets'
+                              ? 'border-blue-600 bg-blue-50'
+                              : 'border-gray-300 bg-white hover:border-gray-400'
+                          }`}
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className={`mt-1 w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                              projectType === 'sheets' ? 'border-blue-600' : 'border-gray-300'
+                            }`}>
+                              {projectType === 'sheets' && (
+                                <div className="w-3 h-3 bg-blue-600 rounded-full" />
+                              )}
+                            </div>
+                            <div className="flex-1">
+                              <div className="font-semibold text-gray-900 mb-1">
+                                스프레드시트 귀속
+                              </div>
+                              <p className="text-sm text-gray-600">
+                                선택한 스프레드시트에 직접 연결된 Apps Script 프로젝트를 생성합니다.
+                                스프레드시트에서 바로 실행할 수 있습니다.
+                              </p>
+                            </div>
+                          </div>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setProjectType('standalone')}
+                          className={`p-4 border-2 rounded-lg text-left transition ${
+                            projectType === 'standalone'
+                              ? 'border-blue-600 bg-blue-50'
+                              : 'border-gray-300 bg-white hover:border-gray-400'
+                          }`}
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className={`mt-1 w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                              projectType === 'standalone' ? 'border-blue-600' : 'border-gray-300'
+                            }`}>
+                              {projectType === 'standalone' && (
+                                <div className="w-3 h-3 bg-blue-600 rounded-full" />
+                              )}
+                            </div>
+                            <div className="flex-1">
+                              <div className="font-semibold text-gray-900 mb-1">
+                                별도 파일
+                              </div>
+                              <p className="text-sm text-gray-600">
+                                독립적인 Apps Script 프로젝트를 생성합니다.
+                                여러 스프레드시트에서 재사용하거나 웹 앱으로 배포할 수 있습니다.
+                              </p>
+                            </div>
+                          </div>
+                        </button>
+                      </div>
+                      <p className="mt-2 text-sm text-gray-500">
+                        {projectType === 'sheets'
+                          ? '💡 권장: 특정 스프레드시트 전용으로 사용하는 경우'
+                          : '💡 권장: 여러 스프레드시트에서 사용하거나 웹 앱으로 배포하는 경우'
+                        }
+                      </p>
+                    </div>
+
                     <button
                       onClick={handleAnalyze}
                       disabled={isAnalyzing || !spreadsheetUrl}
@@ -218,6 +328,11 @@ export default function AppsScriptGeneratorPage() {
                     )}
                   </button>
                 </div>
+
+                {/* AI 구조 분석 (가장 먼저 표시) */}
+                {analysisResult.structureAnalysis && (
+                  <StructureAnalysis structureAnalysis={analysisResult.structureAnalysis} />
+                )}
 
                 {/* Summary Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -288,13 +403,22 @@ export default function AppsScriptGeneratorPage() {
               <div className="space-y-6">
                 <div className="flex items-center justify-between">
                   <h2 className="text-xl font-semibold">생성된 Apps Script 코드</h2>
-                  <button
-                    onClick={handleDownload}
-                    className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-                  >
-                    <Download className="h-5 w-5" />
-                    프로젝트 다운로드
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleDownload}
+                      className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition"
+                    >
+                      <Download className="h-5 w-5" />
+                      ZIP 다운로드
+                    </button>
+                    <button
+                      onClick={() => setShowDeployWizard(true)}
+                      className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                    >
+                      <Rocket className="h-5 w-5" />
+                      자동 배포
+                    </button>
+                  </div>
                 </div>
 
                 {/* Success Message */}
@@ -307,7 +431,7 @@ export default function AppsScriptGeneratorPage() {
                       </h3>
                       <p className="text-sm text-green-700">
                         모듈화된 구조로 {Object.keys(generatedCode.files || {}).length}개의 파일이 생성되었습니다.
-                        다운로드 후 Google Apps Script 에디터에 업로드하세요.
+                        ZIP 파일을 다운로드하여 clasp으로 배포하거나 수동으로 업로드하세요.
                       </p>
                     </div>
                   </div>
@@ -328,34 +452,45 @@ export default function AppsScriptGeneratorPage() {
 
                 {/* Setup Instructions */}
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-                  <h3 className="font-semibold text-blue-900 mb-3">설치 가이드</h3>
-                  <ol className="space-y-2 text-sm text-blue-800">
-                    <li className="flex gap-2">
-                      <span className="font-semibold">1.</span>
-                      <span>Google Sheets에서 확장 프로그램 → Apps Script 열기</span>
-                    </li>
-                    <li className="flex gap-2">
-                      <span className="font-semibold">2.</span>
-                      <span>다운로드한 파일들을 Apps Script 프로젝트에 추가</span>
-                    </li>
-                    <li className="flex gap-2">
-                      <span className="font-semibold">3.</span>
-                      <span>Config.gs에서 스프레드시트 ID 등 설정 수정</span>
-                    </li>
-                    <li className="flex gap-2">
-                      <span className="font-semibold">4.</span>
-                      <span>트리거 설정 (시간 기반/이벤트 기반)</span>
-                    </li>
-                    <li className="flex gap-2">
-                      <span className="font-semibold">5.</span>
-                      <span>메뉴에서 수동 실행으로 테스트</span>
-                    </li>
-                  </ol>
+                  <h3 className="font-semibold text-blue-900 mb-3">📦 설치 가이드 (clasp 권장)</h3>
+                  <div className="space-y-4 text-sm text-blue-800">
+                    <div>
+                      <div className="font-semibold mb-2">방법 1: clasp 사용 (권장)</div>
+                      <ol className="space-y-2 ml-4 list-decimal">
+                        <li>ZIP 파일 다운로드 및 압축 해제</li>
+                        <li>터미널에서 프로젝트 폴더로 이동</li>
+                        <li><code className="bg-blue-100 px-2 py-1 rounded">npm install -g @google/clasp</code></li>
+                        <li><code className="bg-blue-100 px-2 py-1 rounded">clasp login</code> (처음 한 번만)</li>
+                        <li><code className="bg-blue-100 px-2 py-1 rounded">clasp create --title "프로젝트명"</code></li>
+                        <li><code className="bg-blue-100 px-2 py-1 rounded">clasp push</code> (코드 업로드)</li>
+                        <li><code className="bg-blue-100 px-2 py-1 rounded">clasp open</code> (브라우저에서 열기)</li>
+                      </ol>
+                    </div>
+                    <div className="border-t border-blue-300 pt-3">
+                      <div className="font-semibold mb-2">방법 2: 수동 업로드</div>
+                      <ol className="space-y-2 ml-4 list-decimal">
+                        <li>Google Sheets에서 확장 프로그램 → Apps Script 열기</li>
+                        <li>ZIP 파일의 각 .gs 파일을 Apps Script 에디터에 복사</li>
+                        <li>프로젝트 설정에서 "appsscript.json 매니페스트 파일 표시" 체크</li>
+                        <li>appsscript.json 내용 복사하여 붙여넣기</li>
+                        <li>Config.gs에서 스프레드시트 ID 확인 및 설정</li>
+                      </ol>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
           </div>
         </div>
+
+        {/* Deploy Wizard Modal */}
+        {showDeployWizard && generatedCode && (
+          <DeployWizard
+            generatedCode={generatedCode}
+            analysisResult={analysisResult}
+            onClose={() => setShowDeployWizard(false)}
+          />
+        )}
 
         {/* Info Section */}
         <div className="bg-white rounded-lg shadow-sm p-6">

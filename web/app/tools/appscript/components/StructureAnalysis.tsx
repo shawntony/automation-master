@@ -1,0 +1,331 @@
+'use client'
+
+import { useEffect, useRef } from 'react'
+import { Network, Lightbulb, GitBranch, Zap, AlertCircle, CheckCircle2, Info } from 'lucide-react'
+import mermaid from 'mermaid'
+
+interface StructureAnalysisProps {
+  structureAnalysis: {
+    diagram: {
+      mermaid: string
+      type: 'flowchart' | 'graph'
+    }
+    description: {
+      overview: string
+      purpose: string
+      dataFlow: string
+      sheetDescriptions: Array<{
+        sheetName: string
+        role: string
+        keyFeatures: string[]
+      }>
+      complexity: {
+        level: 'simple' | 'moderate' | 'complex' | 'very-complex'
+        reasons: string[]
+      }
+      recommendations: string[]
+    }
+    structure: {
+      sheetRelationships: Array<{
+        from: string
+        to: string
+        type: string
+        description: string
+      }>
+      dataPatterns: Array<{
+        pattern: string
+        sheets: string[]
+        description: string
+      }>
+      businessLogic: Array<{
+        logic: string
+        location: string
+        description: string
+      }>
+    }
+  }
+}
+
+export function StructureAnalysis({ structureAnalysis }: StructureAnalysisProps) {
+  const mermaidRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (mermaidRef.current && structureAnalysis.diagram.mermaid) {
+      // Mermaid 초기화
+      mermaid.initialize({
+        startOnLoad: true,
+        theme: 'default',
+        flowchart: {
+          useMaxWidth: true,
+          htmlLabels: true,
+          curve: 'basis'
+        }
+      })
+
+      // 다이어그램 렌더링
+      const renderDiagram = async () => {
+        try {
+          const { svg } = await mermaid.render(
+            'mermaid-diagram',
+            structureAnalysis.diagram.mermaid
+          )
+          if (mermaidRef.current) {
+            mermaidRef.current.innerHTML = svg
+          }
+        } catch (error) {
+          console.error('Mermaid rendering error:', error)
+          if (mermaidRef.current) {
+            mermaidRef.current.innerHTML = '<p class="text-red-500">다이어그램을 렌더링할 수 없습니다</p>'
+          }
+        }
+      }
+
+      renderDiagram()
+    }
+  }, [structureAnalysis.diagram.mermaid])
+
+  const { description, structure } = structureAnalysis
+
+  // 복잡도 레벨에 따른 색상
+  const complexityColors = {
+    'simple': 'text-green-600 bg-green-50 border-green-200',
+    'moderate': 'text-blue-600 bg-blue-50 border-blue-200',
+    'complex': 'text-orange-600 bg-orange-50 border-orange-200',
+    'very-complex': 'text-red-600 bg-red-50 border-red-200'
+  }
+
+  const complexityLabels = {
+    'simple': '단순',
+    'moderate': '보통',
+    'complex': '복잡',
+    'very-complex': '매우 복잡'
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* 전체 개요 */}
+      <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-6">
+        <div className="flex items-start gap-3">
+          <div className="p-2 bg-blue-100 rounded-lg">
+            <Network className="h-6 w-6 text-blue-600" />
+          </div>
+          <div className="flex-1">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              🤖 AI 구조 분석
+            </h3>
+            <p className="text-gray-700 mb-3">{description.overview}</p>
+            <div className="bg-white/70 rounded-lg p-3">
+              <p className="text-sm font-medium text-gray-600 mb-1">스프레드시트 목적:</p>
+              <p className="text-gray-800">{description.purpose}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 제작자 의도 분석 */}
+      <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-lg p-6">
+        <div className="flex items-start gap-3">
+          <div className="p-2 bg-purple-100 rounded-lg">
+            <Lightbulb className="h-6 w-6 text-purple-600" />
+          </div>
+          <div className="flex-1">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              🎯 제작자의 의도
+            </h3>
+
+            {/* 주요 목표 */}
+            <div className="mb-4">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-sm font-semibold text-purple-700">주요 목표</span>
+              </div>
+              <p className="text-gray-700 bg-white/70 rounded-lg p-3">
+                {description.creatorIntent.mainGoal}
+              </p>
+            </div>
+
+            {/* 비즈니스 맥락 */}
+            <div className="mb-4">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-sm font-semibold text-purple-700">비즈니스 맥락</span>
+              </div>
+              <p className="text-gray-700 bg-white/70 rounded-lg p-3">
+                {description.creatorIntent.businessContext}
+              </p>
+            </div>
+
+            {/* 워크플로우 설계 의도 */}
+            <div className="mb-4">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-sm font-semibold text-purple-700">워크플로우 설계 의도</span>
+              </div>
+              <p className="text-gray-700 bg-white/70 rounded-lg p-3">
+                {description.creatorIntent.workflowDesign}
+              </p>
+            </div>
+
+            {/* 해결하려는 문제점들 */}
+            {description.creatorIntent.painPoints.length > 0 && (
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-sm font-semibold text-purple-700">해결하려는 문제점</span>
+                </div>
+                <div className="bg-white/70 rounded-lg p-3">
+                  <ul className="space-y-2">
+                    {description.creatorIntent.painPoints.map((point: string, index: number) => (
+                      <li key={index} className="flex items-start gap-2 text-sm text-gray-700">
+                        <AlertCircle className="h-4 w-4 text-orange-500 mt-0.5 flex-shrink-0" />
+                        <span>{point}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* 복잡도 평가 */}
+      <div className={`border rounded-lg p-4 ${complexityColors[description.complexity.level]}`}>
+        <div className="flex items-center gap-2 mb-3">
+          <AlertCircle className="h-5 w-5" />
+          <span className="font-semibold">
+            복잡도: {complexityLabels[description.complexity.level]}
+          </span>
+        </div>
+        <ul className="space-y-1 text-sm">
+          {description.complexity.reasons.map((reason, index) => (
+            <li key={index} className="flex items-start gap-2">
+              <span className="mt-1">•</span>
+              <span>{reason}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      {/* 시각적 다이어그램 */}
+      <div className="bg-white border rounded-lg p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <GitBranch className="h-5 w-5 text-purple-600" />
+          <h3 className="text-lg font-semibold">시트 간 관계 다이어그램</h3>
+        </div>
+        <div
+          ref={mermaidRef}
+          className="mermaid-container overflow-x-auto bg-gray-50 rounded-lg p-4"
+        />
+        <div className="mt-3 text-sm text-gray-500">
+          <Info className="h-4 w-4 inline mr-1" />
+          파란색: 데이터 시트 | 주황색: 복잡한 계산 시트 | 보라색: 일반 시트
+        </div>
+      </div>
+
+      {/* 데이터 흐름 */}
+      <div className="bg-white border rounded-lg p-6">
+        <div className="flex items-center gap-2 mb-3">
+          <Zap className="h-5 w-5 text-yellow-600" />
+          <h3 className="text-lg font-semibold">데이터 흐름</h3>
+        </div>
+        <p className="text-gray-700">{description.dataFlow}</p>
+      </div>
+
+      {/* 시트별 상세 설명 */}
+      <div className="bg-white border rounded-lg p-6">
+        <h3 className="text-lg font-semibold mb-4">시트별 상세 분석</h3>
+        <div className="space-y-4">
+          {description.sheetDescriptions.map((sheet, index) => (
+            <div key={index} className="border-l-4 border-blue-500 pl-4 py-2">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="font-semibold text-gray-900">{sheet.sheetName}</span>
+                <span className="text-sm px-2 py-0.5 bg-blue-100 text-blue-700 rounded">
+                  {sheet.role}
+                </span>
+              </div>
+              <ul className="text-sm text-gray-600 space-y-1">
+                {sheet.keyFeatures.map((feature, fIndex) => (
+                  <li key={fIndex} className="flex items-start gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                    <span>{feature}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* 데이터 패턴 */}
+      {structure.dataPatterns.length > 0 && (
+        <div className="bg-white border rounded-lg p-6">
+          <h3 className="text-lg font-semibold mb-4">감지된 데이터 패턴</h3>
+          <div className="space-y-3">
+            {structure.dataPatterns.map((pattern, index) => (
+              <div key={index} className="bg-gray-50 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <div className="p-1.5 bg-purple-100 rounded">
+                    <Network className="h-4 w-4 text-purple-600" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="font-medium text-gray-900 mb-1">
+                      {pattern.description}
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      시트: {pattern.sheets.join(', ')}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 비즈니스 로직 */}
+      {structure.businessLogic.length > 0 && (
+        <div className="bg-white border rounded-lg p-6">
+          <h3 className="text-lg font-semibold mb-4">비즈니스 로직 분석</h3>
+          <div className="space-y-3">
+            {structure.businessLogic.map((logic, index) => (
+              <div key={index} className="bg-gray-50 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <div className="p-1.5 bg-orange-100 rounded">
+                    <Zap className="h-4 w-4 text-orange-600" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="font-medium text-gray-900">{logic.description}</span>
+                      <span className="text-xs px-2 py-0.5 bg-gray-200 text-gray-700 rounded">
+                        {logic.location}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 개선 제안 */}
+      <div className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg p-6">
+        <div className="flex items-start gap-3">
+          <div className="p-2 bg-green-100 rounded-lg">
+            <Lightbulb className="h-6 w-6 text-green-600" />
+          </div>
+          <div className="flex-1">
+            <h3 className="text-lg font-semibold text-gray-900 mb-3">
+              💡 AI 추천 사항
+            </h3>
+            <ul className="space-y-2">
+              {description.recommendations.map((rec, index) => (
+                <li key={index} className="flex items-start gap-2 text-gray-700">
+                  <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+                  <span>{rec}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
