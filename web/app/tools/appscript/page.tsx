@@ -662,10 +662,10 @@ export default function AppsScriptGeneratorPage() {
                   />
                 )}
 
-                {/* 데이터 정리 로드맵 (AI 분석 후 표시) */}
-                {analysisResult && (
+                {/* 데이터 정리 로드맵 - 중복으로 인해 임시 비활성화 */}
+                {/* {analysisResult && (
                   <DataCleaningRoadmap analysisResult={analysisResult} />
-                )}
+                )} */}
 
                 {/* AI 어시스턴트 채팅 */}
                 {analysisResult && (
