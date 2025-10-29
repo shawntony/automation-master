@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Network, Lightbulb, GitBranch, Zap, AlertCircle, CheckCircle2, Info, FileText, GitCompare, TrendingUp, Target } from 'lucide-react'
+import { Network, Lightbulb, GitBranch, Zap, AlertCircle, CheckCircle2, Info, FileText, GitCompare, TrendingUp, Target, Code, ArrowRight, Database } from 'lucide-react'
 import mermaid from 'mermaid'
 
 interface StructureAnalysisProps {
@@ -50,23 +50,31 @@ interface StructureAnalysisProps {
       }>
     }
   }
+  analysis?: {
+    sheets: Array<{
+      name: string
+      rowCount: number
+      columnCount: number
+      formulas: any[]
+      formulaTypes: Record<string, number>
+    }>
+    totalFormulas: number
+    formulaTypes: Record<string, number>
+  }
 }
 
-export function StructureAnalysis({ structureAnalysis }: StructureAnalysisProps) {
+export function StructureAnalysis({ structureAnalysis, analysis }: StructureAnalysisProps) {
   const mermaidRef = useRef<HTMLDivElement>(null)
   const [activeTab, setActiveTab] = useState<'overview' | 'diagram' | 'sheets' | 'patterns' | 'recommendations'>('overview')
 
   useEffect(() => {
     let isMounted = true
 
-    // diagram 탭이 활성화되었을 때만 렌더링
     if (activeTab === 'diagram' && mermaidRef.current && structureAnalysis?.diagram?.mermaid) {
-      // 초기 상태: 로딩 메시지 표시
       if (mermaidRef.current) {
         mermaidRef.current.innerHTML = '<p class="text-gray-500">다이어그램 로딩 중...</p>'
       }
 
-      // Mermaid 초기화
       mermaid.initialize({
         startOnLoad: true,
         theme: 'default',
@@ -77,21 +85,12 @@ export function StructureAnalysis({ structureAnalysis }: StructureAnalysisProps)
         }
       })
 
-      // 다이어그램 렌더링
       const renderDiagram = async () => {
         try {
-          // 고유 ID 생성 (중복 방지)
           const uniqueId = `mermaid-diagram-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-
-          const result = await mermaid.render(
-            uniqueId,
-            structureAnalysis.diagram.mermaid
-          )
-
-          // Mermaid render()는 문자열을 직접 반환하거나 {svg: string} 객체를 반환할 수 있음
+          const result = await mermaid.render(uniqueId, structureAnalysis.diagram.mermaid)
           const svgContent = typeof result === 'string' ? result : result.svg
 
-          // 컴포넌트가 여전히 마운트되어 있을 때만 업데이트
           if (isMounted && mermaidRef.current && svgContent) {
             mermaidRef.current.innerHTML = svgContent
           }
@@ -105,13 +104,11 @@ export function StructureAnalysis({ structureAnalysis }: StructureAnalysisProps)
 
       renderDiagram()
     } else {
-      // 데이터가 없으면 빈 상태로
       if (mermaidRef.current) {
         mermaidRef.current.innerHTML = ''
       }
     }
 
-    // 클린업 함수
     return () => {
       isMounted = false
     }
@@ -119,7 +116,6 @@ export function StructureAnalysis({ structureAnalysis }: StructureAnalysisProps)
 
   const { description, structure } = structureAnalysis
 
-  // 복잡도 레벨에 따른 색상
   const complexityColors = {
     'simple': 'text-green-600 bg-green-50 border-green-200',
     'moderate': 'text-blue-600 bg-blue-50 border-blue-200',
@@ -134,7 +130,6 @@ export function StructureAnalysis({ structureAnalysis }: StructureAnalysisProps)
     'very-complex': '매우 복잡'
   }
 
-  // 탭 설정
   const tabs = [
     { id: 'overview', label: '전체 개요', icon: FileText },
     { id: 'diagram', label: '관계 다이어그램', icon: GitBranch },
@@ -172,10 +167,10 @@ export function StructureAnalysis({ structureAnalysis }: StructureAnalysisProps)
 
       {/* Tab Content */}
       <div className="mt-6">
-        {/* 전체 개요 탭 */}
+        {/* 전체 개요 탭 - 핵심 요약만 */}
         {activeTab === 'overview' && (
           <div className="space-y-6">
-            {/* AI 구조 분석 */}
+            {/* 핵심 요약 */}
             <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-6">
               <div className="flex items-start gap-3">
                 <div className="p-2 bg-blue-100 rounded-lg">
@@ -183,18 +178,24 @@ export function StructureAnalysis({ structureAnalysis }: StructureAnalysisProps)
                 </div>
                 <div className="flex-1">
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    🤖 AI 구조 분석
+                    📊 스프레드시트 요약
                   </h3>
                   <p className="text-gray-700 mb-3">{description.overview}</p>
-                  <div className="bg-white/70 rounded-lg p-3">
-                    <p className="text-sm font-medium text-gray-600 mb-1">스프레드시트 목적:</p>
-                    <p className="text-gray-800">{description.purpose}</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="bg-white/70 rounded-lg p-3">
+                      <p className="text-sm font-medium text-gray-600 mb-1">주요 목적</p>
+                      <p className="text-gray-800">{description.purpose}</p>
+                    </div>
+                    <div className={`rounded-lg p-3 ${complexityColors[description.complexity.level]}`}>
+                      <p className="text-sm font-medium mb-1">복잡도</p>
+                      <p className="font-semibold">{complexityLabels[description.complexity.level]}</p>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* 제작자 의도 분석 */}
+            {/* 제작자 의도 - 간결하게 */}
             {description.creatorIntent && (
               <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-lg p-6">
                 <div className="flex items-start gap-3">
@@ -202,95 +203,46 @@ export function StructureAnalysis({ structureAnalysis }: StructureAnalysisProps)
                     <Lightbulb className="h-6 w-6 text-purple-600" />
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-3">
                       🎯 제작자의 의도
                     </h3>
-
-                    {/* 주요 목표 */}
-                    <div className="mb-4">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="text-sm font-semibold text-purple-700">주요 목표</span>
-                      </div>
-                      <p className="text-gray-700 bg-white/70 rounded-lg p-3">
-                        {description.creatorIntent.mainGoal}
-                      </p>
-                    </div>
-
-                    {/* 비즈니스 맥락 */}
-                    <div className="mb-4">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="text-sm font-semibold text-purple-700">비즈니스 맥락</span>
-                      </div>
-                      <p className="text-gray-700 bg-white/70 rounded-lg p-3">
-                        {description.creatorIntent.businessContext}
-                      </p>
-                    </div>
-
-                    {/* 워크플로우 설계 의도 */}
-                    <div className="mb-4">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="text-sm font-semibold text-purple-700">워크플로우 설계 의도</span>
-                      </div>
-                      <p className="text-gray-700 bg-white/70 rounded-lg p-3">
-                        {description.creatorIntent.workflowDesign}
-                      </p>
-                    </div>
-
-                    {/* 해결하려는 문제점들 */}
-                    {description.creatorIntent.painPoints && description.creatorIntent.painPoints.length > 0 && (
-                      <div>
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="text-sm font-semibold text-purple-700">해결하려는 문제점</span>
-                        </div>
-                        <div className="bg-white/70 rounded-lg p-3">
-                          <ul className="space-y-2">
-                            {description.creatorIntent.painPoints.map((point: string, index: number) => (
-                              <li key={index} className="flex items-start gap-2 text-sm text-gray-700">
-                                <AlertCircle className="h-4 w-4 text-orange-500 mt-0.5 flex-shrink-0" />
-                                <span>{point}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      </div>
-                    )}
+                    <p className="text-gray-700 bg-white/70 rounded-lg p-3 mb-3">
+                      {description.creatorIntent.mainGoal}
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      {description.creatorIntent.businessContext}
+                    </p>
                   </div>
                 </div>
               </div>
             )}
 
-            {/* 복잡도 평가 */}
-            <div className={`border rounded-lg p-4 ${complexityColors[description.complexity.level]}`}>
-              <div className="flex items-center gap-2 mb-3">
-                <AlertCircle className="h-5 w-5" />
-                <span className="font-semibold">
-                  복잡도: {complexityLabels[description.complexity.level]}
-                </span>
+            {/* 빠른 통계 */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="bg-white border rounded-lg p-4">
+                <div className="text-sm text-gray-600 mb-1">총 시트</div>
+                <div className="text-2xl font-bold text-gray-900">{analysis?.sheets.length || 0}</div>
               </div>
-              <ul className="space-y-1 text-sm">
-                {description.complexity.reasons.map((reason, index) => (
-                  <li key={index} className="flex items-start gap-2">
-                    <span className="mt-1">•</span>
-                    <span>{reason}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* 데이터 흐름 */}
-            <div className="bg-white border rounded-lg p-6">
-              <div className="flex items-center gap-2 mb-3">
-                <Zap className="h-5 w-5 text-yellow-600" />
-                <h3 className="text-lg font-semibold">데이터 흐름</h3>
+              <div className="bg-white border rounded-lg p-4">
+                <div className="text-sm text-gray-600 mb-1">총 수식</div>
+                <div className="text-2xl font-bold text-blue-600">{analysis?.totalFormulas || 0}</div>
               </div>
-              <p className="text-gray-700">{description.dataFlow}</p>
+              <div className="bg-white border rounded-lg p-4">
+                <div className="text-sm text-gray-600 mb-1">시트 간 연결</div>
+                <div className="text-2xl font-bold text-purple-600">{structure.sheetRelationships.length}</div>
+              </div>
+              <div className="bg-white border rounded-lg p-4">
+                <div className="text-sm text-gray-600 mb-1">수식 종류</div>
+                <div className="text-2xl font-bold text-green-600">{Object.keys(analysis?.formulaTypes || {}).length}</div>
+              </div>
             </div>
           </div>
         )}
 
-        {/* 관계 다이어그램 탭 */}
+        {/* 관계 다이어그램 탭 - 다이어그램 + 관계 설명 */}
         {activeTab === 'diagram' && (
           <div className="space-y-4">
+            {/* 다이어그램 */}
             <div className="bg-white border rounded-lg p-6">
               <div className="flex items-center gap-2 mb-4">
                 <GitBranch className="h-5 w-5 text-purple-600" />
@@ -299,68 +251,156 @@ export function StructureAnalysis({ structureAnalysis }: StructureAnalysisProps)
               <div
                 ref={mermaidRef}
                 className="mermaid-container overflow-x-auto bg-gray-50 rounded-lg p-4"
-              >
-                {/* Mermaid가 여기에 렌더링됩니다 */}
-              </div>
+              />
               <div className="mt-3 text-sm text-gray-500">
                 <Info className="h-4 w-4 inline mr-1" />
                 파란색: 데이터 시트 | 주황색: 복잡한 계산 시트 | 보라색: 일반 시트
                 <br />
-                화살표 방향: 데이터 제공자 → 데이터 사용자 (코드 생성 시 데이터 시트부터 구현)
+                화살표 방향: 데이터 제공자 → 데이터 사용자
               </div>
+            </div>
+
+            {/* 관계 상세 설명 */}
+            {structure.sheetRelationships.length > 0 && (
+              <div className="bg-white border rounded-lg p-6">
+                <h3 className="text-lg font-semibold mb-4">시트 간 연결 상세</h3>
+                <div className="space-y-3">
+                  {structure.sheetRelationships.map((rel, index) => (
+                    <div key={index} className="flex items-start gap-3 bg-gray-50 rounded-lg p-3">
+                      <ArrowRight className="h-5 w-5 text-blue-500 mt-0.5 flex-shrink-0" />
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="font-medium text-gray-900">{rel.to}</span>
+                          <span className="text-gray-400">→</span>
+                          <span className="font-medium text-blue-600">{rel.from}</span>
+                          <span className={`text-xs px-2 py-0.5 rounded ${
+                            rel.type === 'lookup' ? 'bg-purple-100 text-purple-700' :
+                            rel.type === 'formula-dependency' ? 'bg-orange-100 text-orange-700' :
+                            'bg-blue-100 text-blue-700'
+                          }`}>
+                            {rel.type === 'lookup' ? '데이터 조회' :
+                             rel.type === 'formula-dependency' ? '수식 의존' : '데이터 참조'}
+                          </span>
+                        </div>
+                        <div className="text-sm text-gray-600">{rel.description}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* 데이터 흐름 */}
+            <div className="bg-white border rounded-lg p-6">
+              <div className="flex items-center gap-2 mb-3">
+                <Zap className="h-5 w-5 text-yellow-600" />
+                <h3 className="text-lg font-semibold">데이터 흐름 분석</h3>
+              </div>
+              <p className="text-gray-700">{description.dataFlow}</p>
             </div>
           </div>
         )}
 
-        {/* 시트 상세 탭 */}
+        {/* 시트 상세 탭 - 시트별 분석 + 수식 상세 */}
         {activeTab === 'sheets' && (
           <div className="space-y-4">
-            <div className="bg-white border rounded-lg p-6">
-              <h3 className="text-lg font-semibold mb-4">시트별 상세 분석</h3>
-              <div className="space-y-4">
-                {description.sheetDescriptions.map((sheet, index) => (
-                  <div key={index} className="border-l-4 border-blue-500 pl-4 py-2">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="font-semibold text-gray-900">{sheet.sheetName}</span>
-                      <span className="text-sm px-2 py-0.5 bg-blue-100 text-blue-700 rounded">
-                        {sheet.role}
-                      </span>
+            {description.sheetDescriptions.map((sheet, index) => {
+              const sheetData = analysis?.sheets.find(s => s.name === sheet.sheetName)
+              return (
+                <div key={index} className="bg-white border rounded-lg p-6">
+                  {/* 시트 헤더 */}
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <Database className="h-6 w-6 text-blue-600" />
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900">{sheet.sheetName}</h3>
+                        <span className="text-sm px-2 py-0.5 bg-blue-100 text-blue-700 rounded">
+                          {sheet.role}
+                        </span>
+                      </div>
                     </div>
-                    <ul className="text-sm text-gray-600 space-y-1">
+                    {sheetData && (
+                      <div className="text-sm text-gray-500">
+                        {sheetData.rowCount}행 × {sheetData.columnCount}열
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 주요 특징 */}
+                  <div className="mb-4">
+                    <h4 className="text-sm font-semibold text-gray-700 mb-2">주요 특징</h4>
+                    <ul className="grid grid-cols-1 md:grid-cols-2 gap-2">
                       {sheet.keyFeatures.map((feature, fIndex) => (
-                        <li key={fIndex} className="flex items-start gap-2">
+                        <li key={fIndex} className="flex items-start gap-2 text-sm text-gray-600">
                           <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
                           <span>{feature}</span>
                         </li>
                       ))}
                     </ul>
                   </div>
-                ))}
-              </div>
-            </div>
+
+                  {/* 수식 상세 분석 */}
+                  {sheetData && sheetData.formulas.length > 0 && (
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                        <Code className="h-4 w-4" />
+                        수식 분석 ({sheetData.formulas.length}개)
+                      </h4>
+                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                        {Object.entries(sheetData.formulaTypes)
+                          .sort(([, a], [, b]) => (b as number) - (a as number))
+                          .slice(0, 8)
+                          .map(([type, count]) => (
+                            <div key={type} className="bg-white rounded px-3 py-2 text-sm">
+                              <div className="font-medium text-gray-900">{type}</div>
+                              <div className="text-gray-600">{count}개</div>
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
           </div>
         )}
 
-        {/* 데이터 패턴 탭 */}
+        {/* 데이터 패턴 탭 - 패턴 + 워크플로우 + 비즈니스 로직 */}
         {activeTab === 'patterns' && (
           <div className="space-y-4">
+            {/* 워크플로우 설계 */}
+            {description.creatorIntent && (
+              <div className="bg-white border rounded-lg p-6">
+                <div className="flex items-center gap-2 mb-3">
+                  <GitBranch className="h-5 w-5 text-purple-600" />
+                  <h3 className="text-lg font-semibold">워크플로우 설계</h3>
+                </div>
+                <p className="text-gray-700 bg-purple-50 rounded-lg p-4">
+                  {description.creatorIntent.workflowDesign}
+                </p>
+              </div>
+            )}
+
             {/* 데이터 패턴 */}
             {structure.dataPatterns.length > 0 && (
               <div className="bg-white border rounded-lg p-6">
                 <h3 className="text-lg font-semibold mb-4">감지된 데이터 패턴</h3>
-                <div className="space-y-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {structure.dataPatterns.map((pattern, index) => (
-                    <div key={index} className="bg-gray-50 rounded-lg p-4">
+                    <div key={index} className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-lg p-4 border border-purple-200">
                       <div className="flex items-start gap-3">
                         <div className="p-1.5 bg-purple-100 rounded">
-                          <Network className="h-4 w-4 text-purple-600" />
+                          <TrendingUp className="h-4 w-4 text-purple-600" />
                         </div>
                         <div className="flex-1">
                           <div className="font-medium text-gray-900 mb-1">
                             {pattern.description}
                           </div>
-                          <div className="text-sm text-gray-600">
-                            시트: {pattern.sheets.join(', ')}
+                          <div className="text-sm text-gray-600 mb-2">
+                            관련 시트: {pattern.sheets.join(', ')}
+                          </div>
+                          <div className="text-xs px-2 py-1 bg-white/70 rounded inline-block">
+                            {pattern.pattern}
                           </div>
                         </div>
                       </div>
@@ -376,7 +416,7 @@ export function StructureAnalysis({ structureAnalysis }: StructureAnalysisProps)
                 <h3 className="text-lg font-semibold mb-4">비즈니스 로직 분석</h3>
                 <div className="space-y-3">
                   {structure.businessLogic.map((logic, index) => (
-                    <div key={index} className="bg-gray-50 rounded-lg p-4">
+                    <div key={index} className="bg-orange-50 rounded-lg p-4 border border-orange-200">
                       <div className="flex items-start gap-3">
                         <div className="p-1.5 bg-orange-100 rounded">
                           <Zap className="h-4 w-4 text-orange-600" />
@@ -384,9 +424,12 @@ export function StructureAnalysis({ structureAnalysis }: StructureAnalysisProps)
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
                             <span className="font-medium text-gray-900">{logic.description}</span>
-                            <span className="text-xs px-2 py-0.5 bg-gray-200 text-gray-700 rounded">
+                            <span className="text-xs px-2 py-0.5 bg-white rounded font-mono">
                               {logic.location}
                             </span>
+                          </div>
+                          <div className="text-xs px-2 py-1 bg-white/70 rounded inline-block">
+                            {logic.logic}
                           </div>
                         </div>
                       </div>
@@ -395,32 +438,98 @@ export function StructureAnalysis({ structureAnalysis }: StructureAnalysisProps)
                 </div>
               </div>
             )}
+
+            {/* 해결하려는 문제점 */}
+            {description.creatorIntent?.painPoints && description.creatorIntent.painPoints.length > 0 && (
+              <div className="bg-white border rounded-lg p-6">
+                <div className="flex items-center gap-2 mb-3">
+                  <AlertCircle className="h-5 w-5 text-orange-600" />
+                  <h3 className="text-lg font-semibold">해결하려는 문제점</h3>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {description.creatorIntent.painPoints.map((point: string, index: number) => (
+                    <div key={index} className="flex items-start gap-2 bg-orange-50 rounded-lg p-3 border border-orange-200">
+                      <AlertCircle className="h-4 w-4 text-orange-500 mt-0.5 flex-shrink-0" />
+                      <span className="text-sm text-gray-700">{point}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
-        {/* 개선 제안 탭 */}
+        {/* 개선 제안 탭 - 실행 가능한 구체적 제안 */}
         {activeTab === 'recommendations' && (
           <div className="space-y-4">
+            {/* 복잡도 평가 */}
+            <div className={`border rounded-lg p-6 ${complexityColors[description.complexity.level]}`}>
+              <div className="flex items-center gap-2 mb-3">
+                <AlertCircle className="h-5 w-5" />
+                <h3 className="text-lg font-semibold">
+                  현재 복잡도: {complexityLabels[description.complexity.level]}
+                </h3>
+              </div>
+              <ul className="space-y-2">
+                {description.complexity.reasons.map((reason, index) => (
+                  <li key={index} className="flex items-start gap-2 text-sm">
+                    <span className="mt-1">•</span>
+                    <span>{reason}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* AI 추천 사항 */}
             <div className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg p-6">
               <div className="flex items-start gap-3">
                 <div className="p-2 bg-green-100 rounded-lg">
                   <Lightbulb className="h-6 w-6 text-green-600" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">
-                    💡 AI 추천 사항
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                    💡 실행 가능한 개선 방안
                   </h3>
-                  <ul className="space-y-2">
+                  <div className="space-y-3">
                     {description.recommendations.map((rec, index) => (
-                      <li key={index} className="flex items-start gap-2 text-gray-700">
+                      <div key={index} className="flex items-start gap-3 bg-white/70 rounded-lg p-4">
                         <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
-                        <span>{rec}</span>
-                      </li>
+                        <div className="flex-1">
+                          <p className="text-gray-800">{rec}</p>
+                        </div>
+                      </div>
                     ))}
-                  </ul>
+                  </div>
                 </div>
               </div>
             </div>
+
+            {/* Apps Script 변환 장점 */}
+            {description.complexity.level !== 'simple' && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-blue-900 mb-3">
+                  ⚡ Apps Script로 변환 시 기대 효과
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="bg-white rounded-lg p-4">
+                    <div className="font-medium text-blue-900 mb-1">🚀 성능 향상</div>
+                    <div className="text-sm text-gray-600">반복 계산 최적화로 속도 개선</div>
+                  </div>
+                  <div className="bg-white rounded-lg p-4">
+                    <div className="font-medium text-blue-900 mb-1">🔧 유지보수성</div>
+                    <div className="text-sm text-gray-600">로직을 명확하게 문서화</div>
+                  </div>
+                  <div className="bg-white rounded-lg p-4">
+                    <div className="font-medium text-blue-900 mb-1">🛡️ 안정성</div>
+                    <div className="text-sm text-gray-600">에러 처리와 데이터 검증 강화</div>
+                  </div>
+                  <div className="bg-white rounded-lg p-4">
+                    <div className="font-medium text-blue-900 mb-1">🔄 자동화</div>
+                    <div className="text-sm text-gray-600">트리거와 스케줄링 지원</div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

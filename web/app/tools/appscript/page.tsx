@@ -1,10 +1,39 @@
 'use client'
 
-import { useState } from 'react'
-import { Code2, Upload, Download, Play, FileSpreadsheet, Zap, CheckCircle2, AlertCircle, Loader2, Rocket, GitBranch } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Code2, Upload, Download, Play, FileSpreadsheet, Zap, CheckCircle2, AlertCircle, Loader2, Rocket, GitBranch, Clock, X } from 'lucide-react'
 import { DeployWizard } from './components/DeployWizard'
 import { StructureAnalysis } from './components/StructureAnalysis'
 import { MigrationWizard } from './components/MigrationWizard'
+import { WorkflowProgress, type WorkflowStep } from './components/WorkflowProgress'
+import { NextActionBanner } from './components/NextActionBanner'
+import { DataCleaningRoadmap } from './components/DataCleaningRoadmap'
+import { CodeLibraryBrowser } from './components/CodeLibraryBrowser'
+import { AssistantChat } from './components/AssistantChat'
+import { CodeGeneratorChat } from './components/CodeGeneratorChat'
+
+interface AnalysisHistory {
+  url: string
+  title: string
+  timestamp: number
+  spreadsheetId: string
+  projectType: 'sheets' | 'standalone'
+  analysisResult?: any // 분석 결과 저장
+}
+
+interface WorkflowState {
+  spreadsheetId: string
+  spreadsheetTitle: string
+  currentStep: 'analyze' | 'migrate' | 'visualize' | 'complete'
+  analyze: { status: 'pending' | 'active' | 'completed' | 'error'; message?: string }
+  migrate: { status: 'pending' | 'active' | 'completed' | 'error'; progress?: number; message?: string }
+  visualize: { status: 'pending' | 'active' | 'completed' | 'error'; message?: string }
+  complete: { status: 'pending' | 'active' | 'completed' | 'error'; message?: string }
+}
+
+const HISTORY_STORAGE_KEY = 'ssa-analysis-history'
+const WORKFLOW_STORAGE_KEY = 'ssa-workflow-state'
+const MAX_HISTORY_ITEMS = 5
 
 export default function AppsScriptGeneratorPage() {
   const [spreadsheetUrl, setSpreadsheetUrl] = useState('')
@@ -16,9 +45,207 @@ export default function AppsScriptGeneratorPage() {
   const [activeTab, setActiveTab] = useState('analyze')
   const [showDeployWizard, setShowDeployWizard] = useState(false)
   const [showMigrationWizard, setShowMigrationWizard] = useState(false)
+  const [analysisHistory, setAnalysisHistory] = useState<AnalysisHistory[]>([])
+  const [workflowState, setWorkflowState] = useState<WorkflowState | null>(null)
 
-  const handleAnalyze = async () => {
-    if (!spreadsheetUrl) {
+  // 컴포넌트 마운트 시 히스토리 및 워크플로우 상태 로드
+  useEffect(() => {
+    const savedHistory = localStorage.getItem(HISTORY_STORAGE_KEY)
+    if (savedHistory) {
+      try {
+        setAnalysisHistory(JSON.parse(savedHistory))
+      } catch (error) {
+        console.error('Failed to load history:', error)
+      }
+    }
+
+    const savedWorkflow = localStorage.getItem(WORKFLOW_STORAGE_KEY)
+    if (savedWorkflow) {
+      try {
+        setWorkflowState(JSON.parse(savedWorkflow))
+      } catch (error) {
+        console.error('Failed to load workflow state:', error)
+      }
+    }
+  }, [])
+
+  // 워크플로우 상태 업데이트 및 저장 함수
+  const updateWorkflowState = (updates: Partial<WorkflowState>) => {
+    setWorkflowState(prev => {
+      const newState = prev ? { ...prev, ...updates } : null
+      if (newState) {
+        localStorage.setItem(WORKFLOW_STORAGE_KEY, JSON.stringify(newState))
+      }
+      return newState
+    })
+  }
+
+  // 워크플로우 초기화 함수
+  const initializeWorkflow = (spreadsheetId: string, spreadsheetTitle: string) => {
+    const newState: WorkflowState = {
+      spreadsheetId,
+      spreadsheetTitle,
+      currentStep: 'analyze',
+      analyze: { status: 'active', message: '분석 진행 중...' },
+      migrate: { status: 'pending' },
+      visualize: { status: 'pending' },
+      complete: { status: 'pending' }
+    }
+    setWorkflowState(newState)
+    localStorage.setItem(WORKFLOW_STORAGE_KEY, JSON.stringify(newState))
+  }
+
+  // 워크플로우 단계별 상태를 WorkflowStep 형식으로 변환
+  const getWorkflowSteps = (): WorkflowStep[] => {
+    if (!workflowState) {
+      return [
+        { id: 'analyze', title: '분석', status: 'pending' },
+        { id: 'migrate', title: '마이그레이션', status: 'pending' },
+        { id: 'visualize', title: '시각화', status: 'pending' },
+        { id: 'complete', title: '완료', status: 'pending' }
+      ]
+    }
+
+    return [
+      {
+        id: 'analyze',
+        title: '분석',
+        status: workflowState.analyze.status,
+        message: workflowState.analyze.message
+      },
+      {
+        id: 'migrate',
+        title: '마이그레이션',
+        status: workflowState.migrate.status,
+        progress: workflowState.migrate.progress,
+        message: workflowState.migrate.message
+      },
+      {
+        id: 'visualize',
+        title: '시각화',
+        status: workflowState.visualize.status,
+        message: workflowState.visualize.message
+      },
+      {
+        id: 'complete',
+        title: '완료',
+        status: workflowState.complete.status,
+        message: workflowState.complete.message
+      }
+    ]
+  }
+
+  // 다음 작업 안내 메시지 생성
+  const getNextActionMessage = (): { message: string; actionText?: string; onAction?: () => void; type: 'info' | 'success' | 'warning' } | null => {
+    if (!workflowState) return null
+
+    switch (workflowState.currentStep) {
+      case 'analyze':
+        if (workflowState.analyze.status === 'completed') {
+          return {
+            message: '분석이 완료되었습니다. 다음 단계로 마이그레이션을 시작하세요.',
+            actionText: '마이그레이션 시작',
+            onAction: () => setShowMigrationWizard(true),
+            type: 'success'
+          }
+        }
+        break
+      case 'migrate':
+        if (workflowState.migrate.status === 'completed') {
+          return {
+            message: '마이그레이션이 완료되었습니다. 시각화 대시보드를 확인하세요.',
+            actionText: '시각화 보기',
+            onAction: () => {
+              updateWorkflowState({
+                currentStep: 'visualize',
+                visualize: { status: 'active', message: '시각화 준비 완료' }
+              })
+              setActiveTab('result')
+            },
+            type: 'success'
+          }
+        }
+        break
+      case 'visualize':
+        if (workflowState.visualize.status === 'completed') {
+          return {
+            message: '모든 작업이 완료되었습니다!',
+            type: 'success'
+          }
+        }
+        break
+    }
+    return null
+  }
+
+  // 워크플로우 단계 클릭 핸들러
+  const handleStepClick = (stepId: string) => {
+    switch (stepId) {
+      case 'analyze':
+        setActiveTab('analyze')
+        break
+      case 'migrate':
+        if (analysisResult) {
+          setShowMigrationWizard(true)
+        }
+        break
+      case 'visualize':
+      case 'complete':
+        setActiveTab('result')
+        break
+    }
+  }
+
+  // 히스토리에 추가하는 함수 (분석 결과 포함)
+  const addToHistory = (url: string, title: string, spreadsheetId: string, projectType: 'sheets' | 'standalone', analysisResult?: any) => {
+    const newItem: AnalysisHistory = {
+      url,
+      title,
+      timestamp: Date.now(),
+      spreadsheetId,
+      projectType,
+      analysisResult // 분석 결과도 함께 저장
+    }
+
+    const updatedHistory = [
+      newItem,
+      ...analysisHistory.filter(item => item.spreadsheetId !== spreadsheetId)
+    ].slice(0, MAX_HISTORY_ITEMS)
+
+    setAnalysisHistory(updatedHistory)
+    localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(updatedHistory))
+  }
+
+  // 히스토리에서 항목 제거
+  const removeFromHistory = (spreadsheetId: string) => {
+    const updatedHistory = analysisHistory.filter(item => item.spreadsheetId !== spreadsheetId)
+    setAnalysisHistory(updatedHistory)
+    localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(updatedHistory))
+  }
+
+  // 히스토리 항목 클릭 시 저장된 결과로 바로 이동
+  const loadFromHistory = (item: AnalysisHistory) => {
+    setSpreadsheetUrl(item.url)
+    setProjectType(item.projectType)
+
+    // 저장된 분석 결과가 있으면 바로 사용
+    if (item.analysisResult) {
+      setAnalysisResult(item.analysisResult)
+      setActiveTab('result')
+    } else {
+      // 없으면 다시 분석
+      setTimeout(() => {
+        handleAnalyze(item.url, item.projectType)
+      }, 100)
+    }
+  }
+
+  const handleAnalyze = async (urlOverride?: string | React.MouseEvent, projectTypeOverride?: 'sheets' | 'standalone') => {
+    // 이벤트 객체가 전달된 경우 무시
+    const url = (typeof urlOverride === 'string' ? urlOverride : null) || spreadsheetUrl
+    const type = projectTypeOverride || projectType
+
+    if (!url) {
       alert('스프레드시트 URL을 입력해주세요')
       return
     }
@@ -29,18 +256,35 @@ export default function AppsScriptGeneratorPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          url: spreadsheetUrl,
-          projectType // 프로젝트 타입 전달
+          url,
+          projectType: type // 프로젝트 타입 전달
         })
       })
 
       const data = await response.json()
       // 프로젝트 타입을 분석 결과에 포함
-      setAnalysisResult({ ...data, projectType })
+      const fullResult = { ...data, projectType: type }
+      setAnalysisResult(fullResult)
       setActiveTab('result')
+
+      // 워크플로우 초기화 및 분석 단계 완료 처리
+      if (data.spreadsheetId && data.spreadsheetTitle) {
+        initializeWorkflow(data.spreadsheetId, data.spreadsheetTitle)
+        updateWorkflowState({
+          currentStep: 'analyze',
+          analyze: { status: 'completed', message: '분석 완료' }
+        })
+
+        // 분석 성공 시 히스토리에 추가 (분석 결과도 함께 저장)
+        addToHistory(url, data.spreadsheetTitle, data.spreadsheetId, type, fullResult)
+      }
     } catch (error) {
       console.error('분석 실패:', error)
       alert('스프레드시트 분석에 실패했습니다')
+      // 워크플로우 에러 상태 업데이트
+      updateWorkflowState({
+        analyze: { status: 'error', message: '분석 실패' }
+      })
     } finally {
       setIsAnalyzing(false)
     }
@@ -130,6 +374,29 @@ export default function AppsScriptGeneratorPage() {
           </div>
         </div>
 
+        {/* Workflow Progress Cards */}
+        {workflowState && (
+          <>
+            <WorkflowProgress
+              steps={getWorkflowSteps()}
+              onStepClick={handleStepClick}
+            />
+
+            {/* Next Action Banner */}
+            {(() => {
+              const nextAction = getNextActionMessage()
+              return nextAction ? (
+                <NextActionBanner
+                  message={nextAction.message}
+                  actionText={nextAction.actionText}
+                  onAction={nextAction.onAction}
+                  type={nextAction.type}
+                />
+              ) : null
+            })()}
+          </>
+        )}
+
         {/* Tabs */}
         <div className="bg-white rounded-lg shadow-sm mb-6">
           <div className="border-b border-gray-200">
@@ -192,6 +459,53 @@ export default function AppsScriptGeneratorPage() {
                       <p className="mt-2 text-sm text-gray-500">
                         공유 설정이 '링크가 있는 모든 사용자'로 되어 있어야 합니다
                       </p>
+                    </div>
+
+                    {/* 최근 분석 이력 */}
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Clock className="h-4 w-4 text-gray-600" />
+                        <h3 className="text-sm font-semibold text-gray-900">최근 분석 이력</h3>
+                      </div>
+                      {analysisHistory.length === 0 ? (
+                        <p className="text-sm text-gray-500 text-center py-4">
+                          아직 분석된 스프레드시트가 없습니다. 위에서 URL을 입력하고 분석을 시작하세요.
+                        </p>
+                      ) : (
+                        <div className="space-y-2">
+                          {analysisHistory.map((item) => (
+                            <div
+                              key={item.spreadsheetId}
+                              className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg hover:border-blue-400 hover:shadow-sm transition cursor-pointer group"
+                              onClick={() => loadFromHistory(item)}
+                            >
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <FileSpreadsheet className="h-4 w-4 text-blue-600 flex-shrink-0" />
+                                  <span className="font-medium text-gray-900 truncate">
+                                    {item.title}
+                                  </span>
+                                  <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-700 rounded">
+                                    {item.projectType === 'sheets' ? '귀속' : '별도'}
+                                  </span>
+                                </div>
+                                <p className="text-xs text-gray-500 truncate">
+                                  {new Date(item.timestamp).toLocaleString('ko-KR')}
+                                </p>
+                              </div>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  removeFromHistory(item.spreadsheetId)
+                                }}
+                                className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition opacity-0 group-hover:opacity-100"
+                              >
+                                <X className="h-4 w-4" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
 
                     {/* Project Type Selection */}
@@ -342,8 +656,49 @@ export default function AppsScriptGeneratorPage() {
 
                 {/* AI 구조 분석 (가장 먼저 표시) */}
                 {analysisResult.structureAnalysis && (
-                  <StructureAnalysis structureAnalysis={analysisResult.structureAnalysis} />
+                  <StructureAnalysis
+                    structureAnalysis={analysisResult.structureAnalysis}
+                    analysis={analysisResult}
+                  />
                 )}
+
+                {/* 데이터 정리 로드맵 (AI 분석 후 표시) */}
+                {analysisResult && (
+                  <DataCleaningRoadmap analysisResult={analysisResult} />
+                )}
+
+                {/* AI 어시스턴트 채팅 */}
+                {analysisResult && (
+                  <div className="mt-8">
+                    <AssistantChat
+                      spreadsheetId={analysisResult.spreadsheetId}
+                      spreadsheetTitle={analysisResult.spreadsheetTitle}
+                      analysisResult={analysisResult}
+                      onGenerateCode={(params) => {
+                        console.log('[AssistantChat] 코드 생성 요청:', params)
+                        // 코드 생성기 탭으로 이동하거나 직접 생성 처리
+                        // 추후 CodeGeneratorChat과 연동
+                      }}
+                      onModifyCode={(params) => {
+                        console.log('[AssistantChat] 코드 수정 요청:', params)
+                        // 코드 수정 처리
+                      }}
+                    />
+                  </div>
+                )}
+
+                {/* 코드 라이브러리 */}
+                <div className="mt-8">
+                  <CodeLibraryBrowser
+                    onSelectCode={(item) => {
+                      alert(`선택한 코드: ${item.code.title}\n\n사용 횟수가 증가했습니다.`)
+                      // 사용 횟수 증가
+                      import('@/lib/code-library-storage').then(({ CodeLibraryStorage }) => {
+                        CodeLibraryStorage.incrementUsage(item.id)
+                      })
+                    }}
+                  />
+                </div>
 
                 {/* 샘플링 경고 메시지 */}
                 {analysisResult.samplingInfo?.used && (
@@ -530,6 +885,17 @@ export default function AppsScriptGeneratorPage() {
             onComplete={(result) => {
               console.log('[Migration] Complete:', result)
               setShowMigrationWizard(false)
+
+              // 워크플로우 상태 업데이트
+              updateWorkflowState({
+                currentStep: 'migrate',
+                migrate: {
+                  status: 'completed',
+                  progress: 100,
+                  message: `완료: ${result.completedSheets}개, 실패: ${result.failedSheets}개`
+                }
+              })
+
               alert(`마이그레이션 완료!\n완료: ${result.completedSheets}개 시트\n실패: ${result.failedSheets}개 시트`)
             }}
             onCancel={() => setShowMigrationWizard(false)}
