@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { google } from 'googleapis'
 import { analyzeSpreadsheetStructure } from '@/lib/agents/spreadsheet-analyst'
+import { logger } from '@/lib/logger'
 
 /**
  * 수식 복잡도 계산
@@ -99,7 +100,7 @@ export async function POST(request: NextRequest) {
         const isSampling = rowCount > 200 || columnCount > 13
 
         if (isSampling) {
-          console.log(`[${sheetName}] Large sheet detected (${rowCount}x${columnCount}), using sampling strategy`)
+          logger.info('analyze', `Sheet ${sheetName}: Large sheet detected (${rowCount}x${columnCount}), using sampling strategy`)
         }
 
         for (let startRow = 0; startRow < maxRows; startRow += batchSize) {
@@ -143,15 +144,15 @@ export async function POST(request: NextRequest) {
           } catch (batchError: any) {
             // 메모리 오버플로우 에러 특별 처리
             if (batchError.code === 'ERR_STRING_TOO_LONG' || batchError.message?.includes('string longer than')) {
-              console.error(`[${sheetName}] Memory overflow detected, stopping further batch processing`)
+              logger.warn('analyze', `Sheet ${sheetName}: Memory overflow detected, stopping batch processing`)
               break
             }
-            console.error(`Error fetching batch ${startRow}-${endRow} for ${sheetName}:`, batchError.message)
+            logger.error('analyze', `Error fetching batch ${startRow}-${endRow} for ${sheetName}:`, batchError.message)
             break
           }
         }
       } catch (error: any) {
-        console.error(`Error processing sheet ${sheetName}:`, error.message)
+        logger.error('analyze', `Error processing sheet ${sheetName}:`, error.message)
       }
 
       analyzedSheets.push({
@@ -263,16 +264,16 @@ export async function POST(request: NextRequest) {
     }
 
     // 🤖 AI Agent를 사용한 구조 분석 추가
-    console.log('[analyze] Running structure analysis agent...')
+    logger.info('analyze', 'Running structure analysis agent')
     const structureAnalysis = await analyzeSpreadsheetStructure(analysis)
-    console.log('[analyze] Structure analysis completed')
+    logger.info('analyze', 'Structure analysis completed')
 
     return NextResponse.json({
       ...analysis,
       structureAnalysis // AI Agent의 분석 결과 추가
     })
   } catch (error: any) {
-    console.error('분석 오류:', error)
+    logger.error('analyze', 'Analysis error:', error)
 
     // 권한 오류 처리
     if (error.code === 403) {
