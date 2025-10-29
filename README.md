@@ -7,11 +7,13 @@ AutomationMaster의 10단계 개발 프로세스와 SSA(Smart Sheet Assistant)�
 ## 🎯 통합 개요
 
 ### AutomationMaster (프로세스 레이어)
+
 - 10단계 개발 프로세스 가이드
 - 워크플로우 관리 및 진행상황 추적
 - 프로젝트 관리 및 환경변수 설정
 
 ### + SSA (실행 엔진 레이어)
+
 - **풀스택 생성기**: 5분 안에 완전한 Next.js 14 앱 생성 ⚡
 - **백엔드 생성기**: V0/React → Supabase 백엔드 자동 변환
 - **프론트엔드 생성기**: Supabase 스키마 → React/Next.js 앱 생성
@@ -24,6 +26,7 @@ AutomationMaster의 10단계 개발 프로세스와 SSA(Smart Sheet Assistant)�
 ## ✨ 주요 기능
 
 ### 📋 프로세스 관리
+
 - 🔄 **대화형 워크플로우** - 단계별 정보 입력 → 프롬프트 생성 → 결과 확인 → 승인 프로세스
 - 📋 **10단계 개발 가이드** - 아이디어부터 배포까지 체계적인 단계별 안내
 - 🤖 **AI 기반 분석** - 프로젝트 폴더 분석, 진단, AI 리더십 제공
@@ -34,11 +37,13 @@ AutomationMaster의 10단계 개발 프로세스와 SSA(Smart Sheet Assistant)�
 - 📊 **프로젝트 대시보드** - 전체 프로젝트 진행 현황 한눈에 확인
 
 ### 🚀 SSA 코드 생성 엔진
+
 - ⭐ **풀스택/백엔드/프론트엔드 자동 생성** - Supabase 스키마 기반 완전한 앱 생성
 - 📝 **Apps Script 생성기** 🆕 - Google Sheets 수식을 Apps Script로 자동 변환
   - 🤖 **AI 구조 분석**: 스프레드시트 구조를 시각적 다이어그램과 자연어로 설명
   - 🎯 **제작자 의도 추론**: AI가 제작자의 목표, 비즈니스 맥락, 해결하려는 문제 파악
   - 📊 **Mermaid 다이어그램**: 시트 간 관계를 데이터 제공 방향으로 시각화 (데이터 시트 → 참조 시트)
+  - 🔍 **시트 간 참조 자동 감지**: VLOOKUP, HLOOKUP, XLOOKUP, INDEX, MATCH 등 모든 참조 패턴 정확히 감지
   - 🔄 **코드 생성 최적화**: 다이어그램 기반으로 데이터 시트부터 순차적으로 구현
   - ⚙️ **프로젝트 타입 선택**: 스프레드시트 귀속 또는 독립 실행형 선택 가능
   - 🔄 **자동 배포**: clasp 통합으로 원클릭 배포
@@ -48,11 +53,8 @@ AutomationMaster의 10단계 개발 프로세스와 SSA(Smart Sheet Assistant)�
     - 📊 **실시간 진행률**: 각 시트별 상태와 전체 진행률을 실시간으로 표시
     - ⏮️ **롤백 지원**: 체크포인트 기반 부분/전체 롤백 기능
     - 📈 **BI 도구 연동**: Looker Studio/Metabase 단계별 연결 가이드 제공
-- 🎨 **제안서 자동 생성** - AI 기반 프레젠테이션 자동화 (4시간 → 50분, 79% 단축)
-  - AI 스타일 학습: 브랜드 스타일 100% 재현
-  - 직접 임포트: Canva 템플릿 활용
-  - PPT 진단/개선: D등급 → A등급 자동 업그레이드
-- 🔄 **Google Sheets 마이그레이션** - Sheets → Supabase PostgreSQL 자동 변환
+  - 🎨 **제안서 자동 생성** - AI 기반 프레젠테이션 자동화 (4시간 → 50분, 79% 단축) - AI 스타일 학습: 브랜드 스타일 100% 재현 - 직접 임포트: Canva 템플릿 활용 - PPT 진단/개선: D등급 → A등급 자동 업그레이드
+  - 🔄 **Google Sheets 마이그레이션** - Sheets → Supabase PostgreSQL 자동 변환
 
 ## 📦 설치
 
@@ -115,6 +117,7 @@ npm run web:dev
 ```
 
 **아름다운 웹 UI로 사용하세요!** 브라우저에서 http://localhost:3000 을 열면:
+
 - 📊 **시각적 대시보드**: 전체 진행 상황을 그래프와 차트로 확인
 - 🔄 **웹 기반 워크플로우**: 폼 입력 → 프롬프트 생성 → 클립보드 복사
 - 🎨 **현대적인 UI/UX**: Next.js 14 + Tailwind CSS 기반 반응형 디자인
@@ -188,6 +191,7 @@ npm run checklist -- --step 3
 ```
 
 특정 항목 체크:
+
 ```bash
 npm run checklist -- --step 3 --item 0
 ```
@@ -195,16 +199,19 @@ npm run checklist -- --step 3 --item 0
 ### 환경변수 관리
 
 특정 프리셋으로 설정:
+
 ```bash
 npm run env -- --preset fullstack
 ```
 
 프로젝트 환경변수 상태 확인:
+
 ```bash
 npm run env -- --check ./your-project-path
 ```
 
 특정 경로에 생성:
+
 ```bash
 npm run env -- --preset frontend --target ./my-frontend-project
 ```
@@ -352,18 +359,23 @@ npm run env -- --target ../my-other-project
 ## 🎯 주요 특징
 
 ### 1. 진행상황 자동 저장
+
 모든 진행 상태가 `config/progress.json`에 자동으로 저장됩니다.
 
 ### 2. 다중 환경 지원
+
 `.env`, `.env.development`, `.env.staging`, `.env.production` 파일을 자동으로 생성합니다.
 
 ### 3. 유효성 검증
+
 환경변수 필수 항목과 옵션 값을 자동으로 검증합니다.
 
 ### 4. 체크리스트 관리
+
 각 단계별 체크리스트를 관리하여 빠뜨리지 않고 진행할 수 있습니다.
 
 ### 5. MCP 서버 가이드
+
 각 단계에서 사용할 MCP 서버와 명령어 예시를 제공합니다.
 
 ## 🔄 워크플로우 예시
@@ -405,6 +417,7 @@ npm run env -- --target ../my-other-project
 `.github/workflows/deploy.yml`이 설정되어 있어 main 브랜치에 푸시하면 자동으로 배포됩니다.
 
 **필요한 GitHub Secrets:**
+
 - `VERCEL_TOKEN`: Vercel 계정 토큰
 - `VERCEL_ORG_ID`: Vercel 조직 ID
 - `VERCEL_PROJECT_ID`: Vercel 프로젝트 ID
@@ -427,6 +440,7 @@ vercel --prod
 - **master**: 레거시 브랜치
 
 **배포 프로세스:**
+
 ```bash
 # 1. develop 브랜치에서 개발
 git checkout develop
@@ -450,6 +464,7 @@ git push origin main  # 자동 배포 트리거!
 "수정/보완 후 다시 확인 (retry)"을 계속 선택하면 같은 단계가 반복됩니다. 이것은 의도된 기능입니다.
 
 **해결 방법**:
+
 - ✅ **"이 단계는 이정도로 충분함"** 선택 → 다음 단계로 진행
 - ✅ **"워크플로우 종료"** 선택 → 저장하고 나중에 재개
 - ✅ **10번 재시도 후** → 자동으로 강제 진행 옵션 제공
@@ -459,6 +474,7 @@ git push origin main  # 자동 배포 트리거!
 ### 기타 문제
 
 일반적인 문제와 해결 방법은 [TROUBLESHOOTING.md](./TROUBLESHOOTING.md)를 참고하세요:
+
 - npm install 실패
 - 웹앱 시작 오류
 - 환경변수 설정 문제

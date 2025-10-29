@@ -129,7 +129,7 @@ export async function POST(request: NextRequest) {
                   formulas.push({
                     type,
                     location: { row: startRow + rowIndex, col: colIndex },
-                    formula: formulaValue.substring(0, 100),
+                    formula: formulaValue,
                     complexity: calculateFormulaComplexity(formulaValue)
                   })
 
@@ -184,23 +184,51 @@ export async function POST(request: NextRequest) {
 
     analyzedSheets.forEach(sheet => {
       sheet.formulas.forEach(formula => {
-        // 시트 참조 패턴: '시트명'!A1 또는 시트명!A1
-        const refMatches = formula.formula.matchAll(/(?:'([^']+)'|([A-Z가-힣0-9\s]+))!([A-Z]+[0-9]+(?::[A-Z]+[0-9]+)?)/g)
+        // 참조 유형별로 감지된 시트 저장
+        const lookupSheets = new Set<string>()
+        const formulaSheets = new Set<string>()
 
-        for (const match of refMatches) {
-          const targetSheet = match[1] || match[2] // 따옴표로 감싸진 이름 또는 일반 이름
+        // 1. 작은따옴표로 감싸인 모든 시트명 찾기
+        const sheetRefPattern = /'([^']+)'!/g
+        const matches = formula.formula.matchAll(sheetRefPattern)
 
-          // 실제 존재하는 시트인지 확인
-          if (targetSheet && sheetNames.includes(targetSheet.trim())) {
-            if (!dependencies.find(d => d.from === sheet.name && d.to === targetSheet.trim())) {
-              dependencies.push({
-                from: sheet.name,
-                to: targetSheet.trim(),
-                reference: formula.location
-              })
+        // 2. LOOKUP 함수인지 확인
+        const isLookupFormula = /^=(?:VLOOKUP|HLOOKUP|XLOOKUP|INDEX|MATCH)\s*\(/i.test(formula.formula)
+
+        for (const match of matches) {
+          const targetSheet = match[1]?.trim()
+          if (targetSheet && sheetNames.includes(targetSheet)) {
+            if (isLookupFormula) {
+              lookupSheets.add(targetSheet)
+            } else {
+              formulaSheets.add(targetSheet)
             }
           }
         }
+
+        // LOOKUP 함수로 감지된 시트들 추가 (type: 'lookup')
+        lookupSheets.forEach(targetSheet => {
+          if (!dependencies.find(d => d.from === sheet.name && d.to === targetSheet)) {
+            dependencies.push({
+              from: sheet.name,
+              to: targetSheet,
+              type: 'lookup',
+              reference: formula.location
+            })
+          }
+        })
+
+        // 일반 수식 참조로 감지된 시트들 추가 (type: 'formula-dependency')
+        formulaSheets.forEach(targetSheet => {
+          if (!dependencies.find(d => d.from === sheet.name && d.to === targetSheet)) {
+            dependencies.push({
+              from: sheet.name,
+              to: targetSheet,
+              type: 'formula-dependency',
+              reference: formula.location
+            })
+          }
+        })
       })
     })
 
