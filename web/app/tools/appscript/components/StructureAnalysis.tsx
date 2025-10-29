@@ -195,28 +195,6 @@ export function StructureAnalysis({ structureAnalysis, analysis }: StructureAnal
               </div>
             </div>
 
-            {/* 제작자 의도 - 간결하게 */}
-            {description.creatorIntent && (
-              <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-lg p-6">
-                <div className="flex items-start gap-3">
-                  <div className="p-2 bg-purple-100 rounded-lg">
-                    <Lightbulb className="h-6 w-6 text-purple-600" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-3">
-                      🎯 제작자의 의도
-                    </h3>
-                    <p className="text-gray-700 bg-white/70 rounded-lg p-3 mb-3">
-                      {description.creatorIntent.mainGoal}
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      {description.creatorIntent.businessContext}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-
             {/* 빠른 통계 */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="bg-white border rounded-lg p-4">
