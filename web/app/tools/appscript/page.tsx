@@ -662,18 +662,10 @@ export default function AppsScriptGeneratorPage() {
                   />
                 )}
 
-                {/*
-                  아래 섹션들은 모든 탭에서 중복 표시되어 주석처리함
-                  필요시 StructureAnalysis 컴포넌트 내부의 특정 탭으로 이동 필요
-                */}
+                {/* AI 도구 및 코드 지원 섹션 */}
 
-                {/* 데이터 정리 로드맵 - 중복으로 인해 임시 비활성화 */}
-                {/* {analysisResult && (
-                  <DataCleaningRoadmap analysisResult={analysisResult} />
-                )} */}
-
-                {/* AI 어시스턴트 채팅 - 중복으로 인해 임시 비활성화 */}
-                {/* {analysisResult && (
+                {/* AI 어시스턴트 채팅 */}
+                {analysisResult && (
                   <div className="mt-8">
                     <AssistantChat
                       spreadsheetId={analysisResult.spreadsheetId}
@@ -681,25 +673,28 @@ export default function AppsScriptGeneratorPage() {
                       analysisResult={analysisResult}
                       onGenerateCode={(params) => {
                         console.log('[AssistantChat] 코드 생성 요청:', params)
+                        // 코드 생성기 탭으로 이동하거나 직접 생성 처리
                       }}
                       onModifyCode={(params) => {
                         console.log('[AssistantChat] 코드 수정 요청:', params)
+                        // 코드 수정 처리
                       }}
                     />
                   </div>
-                )} */}
+                )}
 
-                {/* 코드 라이브러리 - 중복으로 인해 임시 비활성화 */}
-                {/* <div className="mt-8">
+                {/* 코드 라이브러리 */}
+                <div className="mt-8">
                   <CodeLibraryBrowser
                     onSelectCode={(item) => {
                       alert(`선택한 코드: ${item.code.title}\n\n사용 횟수가 증가했습니다.`)
+                      // 사용 횟수 증가
                       import('@/lib/code-library-storage').then(({ CodeLibraryStorage }) => {
                         CodeLibraryStorage.incrementUsage(item.id)
                       })
                     }}
                   />
-                </div> */}
+                </div>
 
                 {/* 샘플링 경고 메시지 - 중복으로 인해 임시 비활성화 */}
                 {/* {analysisResult.samplingInfo?.used && (
