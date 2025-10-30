@@ -659,42 +659,25 @@ export default function AppsScriptGeneratorPage() {
                   <StructureAnalysis
                     structureAnalysis={analysisResult.structureAnalysis}
                     analysis={analysisResult}
-                  />
-                )}
-
-                {/* AI 도구 및 코드 지원 섹션 */}
-
-                {/* AI 어시스턴트 채팅 */}
-                {analysisResult && (
-                  <div className="mt-8">
-                    <AssistantChat
-                      spreadsheetId={analysisResult.spreadsheetId}
-                      spreadsheetTitle={analysisResult.spreadsheetTitle}
-                      analysisResult={analysisResult}
-                      onGenerateCode={(params) => {
-                        console.log('[AssistantChat] 코드 생성 요청:', params)
-                        // 코드 생성기 탭으로 이동하거나 직접 생성 처리
-                      }}
-                      onModifyCode={(params) => {
-                        console.log('[AssistantChat] 코드 수정 요청:', params)
-                        // 코드 수정 처리
-                      }}
-                    />
-                  </div>
-                )}
-
-                {/* 코드 라이브러리 */}
-                <div className="mt-8">
-                  <CodeLibraryBrowser
+                    spreadsheetId={analysisResult.spreadsheetId}
+                    spreadsheetTitle={analysisResult.spreadsheetTitle}
+                    analysisResult={analysisResult}
+                    onGenerateCode={(params) => {
+                      console.log('[StructureAnalysis] 코드 생성 요청:', params)
+                    }}
+                    onModifyCode={(params) => {
+                      console.log('[StructureAnalysis] 코드 수정 요청:', params)
+                    }}
                     onSelectCode={(item) => {
                       alert(`선택한 코드: ${item.code.title}\n\n사용 횟수가 증가했습니다.`)
-                      // 사용 횟수 증가
                       import('@/lib/code-library-storage').then(({ CodeLibraryStorage }) => {
                         CodeLibraryStorage.incrementUsage(item.id)
                       })
                     }}
                   />
-                </div>
+                )}
+
+                {/* AI 어시스턴트와 코드 라이브러리는 이제 StructureAnalysis의 "개선 제안" 탭 안에 있습니다 */}
 
                 {/* 샘플링 경고 메시지 - 중복으로 인해 임시 비활성화 */}
                 {/* {analysisResult.samplingInfo?.used && (

@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { Network, Lightbulb, GitBranch, Zap, AlertCircle, CheckCircle2, Info, FileText, GitCompare, TrendingUp, Target, Code, ArrowRight, Database } from 'lucide-react'
 import mermaid from 'mermaid'
+import { AssistantChat } from './AssistantChat'
+import { CodeLibraryBrowser } from './CodeLibraryBrowser'
 
 interface StructureAnalysisProps {
   structureAnalysis: {
@@ -61,9 +63,24 @@ interface StructureAnalysisProps {
     totalFormulas: number
     formulaTypes: Record<string, number>
   }
+  spreadsheetId?: string
+  spreadsheetTitle?: string
+  analysisResult?: any
+  onGenerateCode?: (params: any) => void
+  onModifyCode?: (params: any) => void
+  onSelectCode?: (item: any) => void
 }
 
-export function StructureAnalysis({ structureAnalysis, analysis }: StructureAnalysisProps) {
+export function StructureAnalysis({
+  structureAnalysis,
+  analysis,
+  spreadsheetId,
+  spreadsheetTitle,
+  analysisResult,
+  onGenerateCode,
+  onModifyCode,
+  onSelectCode
+}: StructureAnalysisProps) {
   const mermaidRef = useRef<HTMLDivElement>(null)
   const [activeTab, setActiveTab] = useState<'overview' | 'diagram' | 'sheets' | 'patterns' | 'recommendations'>('overview')
 
@@ -508,6 +525,26 @@ export function StructureAnalysis({ structureAnalysis, analysis }: StructureAnal
                 </div>
               </div>
             )}
+
+            {/* AI 어시스턴트 채팅 */}
+            {spreadsheetId && analysisResult && (
+              <div className="mt-8">
+                <AssistantChat
+                  spreadsheetId={spreadsheetId}
+                  spreadsheetTitle={spreadsheetTitle || '스프레드시트'}
+                  analysisResult={analysisResult}
+                  onGenerateCode={onGenerateCode}
+                  onModifyCode={onModifyCode}
+                />
+              </div>
+            )}
+
+            {/* 코드 라이브러리 */}
+            <div className="mt-8">
+              <CodeLibraryBrowser
+                onSelectCode={onSelectCode}
+              />
+            </div>
           </div>
         )}
       </div>
