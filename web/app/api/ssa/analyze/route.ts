@@ -264,8 +264,15 @@ export async function POST(request: NextRequest) {
           const lookupSheets = new Set<string>()
           const formulaSheets = new Set<string>()
 
-          const sheetRefPattern = /'([^']+)'!/g
-          const matches = formula.formula.matchAll(sheetRefPattern)
+          // 시트 참조 패턴: 따옴표 있는 경우와 없는 경우 모두 감지
+          // 예: '시트 이름'!A1 또는 시트이름!A1
+          const quotedSheetPattern = /'([^']+)'!/g
+          const unquotedSheetPattern = /([A-Za-z0-9가-힣_\-.]+)!/g
+
+          const quotedMatches = formula.formula.matchAll(quotedSheetPattern)
+          const unquotedMatches = formula.formula.matchAll(unquotedSheetPattern)
+
+          const matches = [...quotedMatches, ...unquotedMatches]
           const isLookupFormula = /^=(?:VLOOKUP|HLOOKUP|XLOOKUP|INDEX|MATCH)\s*\(/i.test(formula.formula)
 
           for (const match of matches) {
