@@ -499,32 +499,6 @@ export function StructureAnalysis({
               </div>
             </div>
 
-            {/* Apps Script 변환 장점 */}
-            {description.complexity.level !== 'simple' && (
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-                <h3 className="text-lg font-semibold text-blue-900 mb-3">
-                  ⚡ Apps Script로 변환 시 기대 효과
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div className="bg-white rounded-lg p-4">
-                    <div className="font-medium text-blue-900 mb-1">🚀 성능 향상</div>
-                    <div className="text-sm text-gray-600">반복 계산 최적화로 속도 개선</div>
-                  </div>
-                  <div className="bg-white rounded-lg p-4">
-                    <div className="font-medium text-blue-900 mb-1">🔧 유지보수성</div>
-                    <div className="text-sm text-gray-600">로직을 명확하게 문서화</div>
-                  </div>
-                  <div className="bg-white rounded-lg p-4">
-                    <div className="font-medium text-blue-900 mb-1">🛡️ 안정성</div>
-                    <div className="text-sm text-gray-600">에러 처리와 데이터 검증 강화</div>
-                  </div>
-                  <div className="bg-white rounded-lg p-4">
-                    <div className="font-medium text-blue-900 mb-1">🔄 자동화</div>
-                    <div className="text-sm text-gray-600">트리거와 스케줄링 지원</div>
-                  </div>
-                </div>
-              </div>
-            )}
 
             {/* AI 어시스턴트 채팅 */}
             {spreadsheetId && analysisResult && (

@@ -881,56 +881,6 @@ export default function AppsScriptGeneratorPage() {
           />
         )}
 
-        {/* Info Section */}
-        <div className="bg-white rounded-lg shadow-sm p-6">
-          <h2 className="text-lg font-semibold mb-4">Apps Script 자동화 기능</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="flex gap-3">
-              <div className="flex-shrink-0">
-                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                  <CheckCircle2 className="h-5 w-5 text-blue-600" />
-                </div>
-              </div>
-              <div>
-                <h3 className="font-medium mb-1">수식 자동 변환</h3>
-                <p className="text-sm text-gray-600">VLOOKUP, SUMIF, IF 등 모든 수식을 Apps Script 함수로 변환</p>
-              </div>
-            </div>
-            <div className="flex gap-3">
-              <div className="flex-shrink-0">
-                <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                  <CheckCircle2 className="h-5 w-5 text-green-600" />
-                </div>
-              </div>
-              <div>
-                <h3 className="font-medium mb-1">성능 최적화</h3>
-                <p className="text-sm text-gray-600">배치 처리, 캐싱으로 실행 속도 50% 이상 향상</p>
-              </div>
-            </div>
-            <div className="flex gap-3">
-              <div className="flex-shrink-0">
-                <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-                  <CheckCircle2 className="h-5 w-5 text-purple-600" />
-                </div>
-              </div>
-              <div>
-                <h3 className="font-medium mb-1">트리거 자동화</h3>
-                <p className="text-sm text-gray-600">시간 기반, 이벤트 기반 자동 실행 설정</p>
-              </div>
-            </div>
-            <div className="flex gap-3">
-              <div className="flex-shrink-0">
-                <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
-                  <CheckCircle2 className="h-5 w-5 text-orange-600" />
-                </div>
-              </div>
-              <div>
-                <h3 className="font-medium mb-1">오류 처리 & 로깅</h3>
-                <p className="text-sm text-gray-600">완벽한 에러 핸들링과 실행 로그 기록</p>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   )
