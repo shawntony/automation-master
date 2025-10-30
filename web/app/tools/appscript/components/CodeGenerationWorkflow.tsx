@@ -12,7 +12,9 @@ import { ConversationHistory } from './ConversationHistory'
 import { CodeLibraryBrowser } from './CodeLibraryBrowser'
 import { CodeExecutionPreview } from './CodeExecutionPreview'
 import { TemplateBrowser } from './TemplateBrowser'
+import { EnhancedCodeGenerator } from './EnhancedCodeGenerator'
 import { getCodeMenuById } from '@/lib/code-menu-storage'
+import { CodeLibraryStorage } from '@/lib/code-library-storage'
 import {
   createConversation,
   addMessage,
@@ -281,39 +283,68 @@ export function CodeGenerationWorkflow({
 
       {/* 1단계: AI 대화 */}
       {activeStep === 'chat' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* 왼쪽: AI 어시스턴트 */}
-          <div className="lg:col-span-2">
-            <div className="bg-white border rounded-lg p-6">
-              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                <MessageSquare className="h-5 w-5" />
-                AI 어시스턴트
-              </h3>
-              <AssistantChat
-                spreadsheetId={spreadsheetId}
-                spreadsheetTitle={spreadsheetTitle}
-                analysisResult={analysisResult}
-                onGenerateCode={async (desc, opts) => {
-                  const code = await onGenerateCode?.(desc, opts)
-                  if (code) {
-                    handleCodeGenerated(code, desc)
-                  }
-                  return code || ''
-                }}
-                onModifyCode={onModifyCode}
-              />
-            </div>
-          </div>
+        <div className="space-y-6">
+          {/* 향상된 코드 생성기 */}
+          <EnhancedCodeGenerator
+            spreadsheetId={spreadsheetId}
+            spreadsheetTitle={spreadsheetTitle}
+            onGenerateCode={async (desc, opts) => {
+              const code = await onGenerateCode?.(desc, opts)
+              if (code) {
+                handleCodeGenerated(code, desc)
+              }
+              return code || ''
+            }}
+            onTransferToLibrary={(entry) => {
+              // 코드 라이브러리로 전송
+              CodeLibraryStorage.save({
+                title: entry.menuName,
+                type: 'automation',
+                description: entry.feature,
+                userRequest: entry.description,
+                code: entry.generatedCode,
+                targetSheets: [],
+                createdAt: entry.createdAt,
+                saved: true
+              })
+            }}
+          />
 
-          {/* 오른쪽: 대화 내역 */}
-          <div>
-            <div className="bg-white border rounded-lg p-6">
-              <ConversationHistory
-                onSelectConversation={(conv) => {
-                  console.log('대화 선택:', conv)
-                }}
-                onConvertToMenu={handleConvertToMenu}
-              />
+          {/* 기존 AI 어시스턴트 및 대화 내역 */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* 왼쪽: AI 어시스턴트 */}
+            <div className="lg:col-span-2">
+              <div className="bg-white border rounded-lg p-6">
+                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                  <MessageSquare className="h-5 w-5" />
+                  AI 어시스턴트 (고급)
+                </h3>
+                <AssistantChat
+                  spreadsheetId={spreadsheetId}
+                  spreadsheetTitle={spreadsheetTitle}
+                  analysisResult={analysisResult}
+                  onGenerateCode={async (desc, opts) => {
+                    const code = await onGenerateCode?.(desc, opts)
+                    if (code) {
+                      handleCodeGenerated(code, desc)
+                    }
+                    return code || ''
+                  }}
+                  onModifyCode={onModifyCode}
+                />
+              </div>
+            </div>
+
+            {/* 오른쪽: 대화 내역 */}
+            <div>
+              <div className="bg-white border rounded-lg p-6">
+                <ConversationHistory
+                  onSelectConversation={(conv) => {
+                    console.log('대화 선택:', conv)
+                  }}
+                  onConvertToMenu={handleConvertToMenu}
+                />
+              </div>
             </div>
           </div>
         </div>
