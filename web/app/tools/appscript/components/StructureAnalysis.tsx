@@ -6,6 +6,7 @@ import mermaid from 'mermaid'
 import { AssistantChat } from './AssistantChat'
 import { CodeLibraryBrowser } from './CodeLibraryBrowser'
 import { DataCleaningRoadmap } from './DataCleaningRoadmap'
+import { CodeGenerationWorkflow } from './CodeGenerationWorkflow'
 
 interface StructureAnalysisProps {
   structureAnalysis: {
@@ -531,45 +532,15 @@ export function StructureAnalysis({
         )}
 
         {/* 코드 생성 탭 - 자연어 코드 생성 워크플로우 */}
-        {activeTab === 'codeGeneration' && (
-          <div className="space-y-6">
-            <div className="bg-white border rounded-lg p-6">
-              <h2 className="text-xl font-bold mb-4">🤖 코드 생성 워크플로우</h2>
-              <p className="text-gray-600 mb-4">
-                AI와 대화하여 Apps Script 코드를 생성하고, 메뉴별로 관리하며, 코드 라이브러리에 저장할 수 있습니다.
-              </p>
-
-              {/* AI 어시스턴트 채팅 */}
-              {spreadsheetId && analysisResult && (
-                <div className="mb-8">
-                  <h3 className="text-lg font-semibold mb-3">1️⃣ AI와 대화하여 코드 생성</h3>
-                  <AssistantChat
-                    spreadsheetId={spreadsheetId}
-                    spreadsheetTitle={spreadsheetTitle || '스프레드시트'}
-                    analysisResult={analysisResult}
-                    onGenerateCode={onGenerateCode}
-                    onModifyCode={onModifyCode}
-                  />
-                </div>
-              )}
-
-              {/* TODO: 코드 메뉴 관리 섹션 추가 예정 */}
-              <div className="mb-8 p-4 bg-yellow-50 border border-yellow-200 rounded">
-                <h3 className="text-lg font-semibold mb-2">2️⃣ 코드 메뉴 관리 (개발 중)</h3>
-                <p className="text-sm text-gray-600">
-                  메뉴명 기반으로 생성된 코드를 관리하고, 버전을 추적하며, 임시/영구 상태를 관리할 수 있습니다.
-                </p>
-              </div>
-
-              {/* 코드 라이브러리 */}
-              <div>
-                <h3 className="text-lg font-semibold mb-3">3️⃣ 코드 라이브러리에 저장</h3>
-                <CodeLibraryBrowser
-                  onSelectCode={onSelectCode}
-                />
-              </div>
-            </div>
-          </div>
+        {activeTab === 'codeGeneration' && spreadsheetId && analysisResult && (
+          <CodeGenerationWorkflow
+            spreadsheetId={spreadsheetId}
+            spreadsheetTitle={spreadsheetTitle || '스프레드시트'}
+            analysisResult={analysisResult}
+            onGenerateCode={onGenerateCode}
+            onModifyCode={onModifyCode}
+            onSelectCode={onSelectCode}
+          />
         )}
       </div>
     </div>
