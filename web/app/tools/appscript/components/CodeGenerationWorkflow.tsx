@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { MessageSquare, Menu, Code, BookOpen, X, FileCode } from 'lucide-react'
 import type { CodeMenuItem, CodeVersion } from '@/types/code-menu'
 import type { ConversationRecord } from '@/types/conversation'
@@ -12,7 +12,7 @@ import { ConversationHistory } from './ConversationHistory'
 import { CodeLibraryBrowser } from './CodeLibraryBrowser'
 import { CodeExecutionPreview } from './CodeExecutionPreview'
 import { TemplateBrowser } from './TemplateBrowser'
-import { EnhancedCodeGenerator } from './EnhancedCodeGenerator'
+import { EnhancedCodeGenerator, type EnhancedCodeGeneratorRef } from './EnhancedCodeGenerator'
 import { getCodeMenuById } from '@/lib/code-menu-storage'
 import { CodeLibraryStorage } from '@/lib/code-library-storage'
 import {
@@ -51,6 +51,10 @@ export function CodeGenerationWorkflow({
   const [executionResult, setExecutionResult] = useState<CodeExecutionResult | null>(null)
   const [executingCode, setExecutingCode] = useState(false)
 
+  // EnhancedCodeGenerator ref와 스크롤 ref
+  const codeGeneratorRef = useRef<EnhancedCodeGeneratorRef>(null)
+  const codeGeneratorSectionRef = useRef<HTMLDivElement>(null)
+
   // AI 어시스턴트에서 코드 생성 시
   const handleCodeGenerated = async (code: string, userMessage: string) => {
     // 1. 대화 기록 생성 또는 업데이트
@@ -85,8 +89,28 @@ export function CodeGenerationWorkflow({
       })
     }
 
-    // 2. 메뉴 자동 생성 제안 (사용자가 원하면)
-    // 이 부분은 사용자가 "메뉴로 저장" 버튼을 클릭할 때 처리
+    // 2. EnhancedCodeGenerator에 자동 채우기
+    if (codeGeneratorRef.current) {
+      // 대화에서 생성된 제목 사용 또는 사용자 메시지 기반으로 생성
+      const title = currentConversationId
+        ? generateConversationTitle([{ role: 'user', content: userMessage, timestamp: new Date() }])
+        : '새 코드'
+
+      codeGeneratorRef.current.fillFormData({
+        menuName: title || '자동 생성 코드',
+        feature: '자동 생성된 기능',
+        description: userMessage,
+        code: code
+      })
+
+      // 3. 스크롤 자동 이동 (Phase 5)
+      setTimeout(() => {
+        codeGeneratorSectionRef.current?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start'
+        })
+      }, 100)
+    }
   }
 
   // 대화를 메뉴로 변환
@@ -285,30 +309,33 @@ export function CodeGenerationWorkflow({
       {activeStep === 'chat' && (
         <div className="space-y-6">
           {/* 향상된 코드 생성기 */}
-          <EnhancedCodeGenerator
-            spreadsheetId={spreadsheetId}
-            spreadsheetTitle={spreadsheetTitle}
-            onGenerateCode={async (desc, opts) => {
-              const code = await onGenerateCode?.(desc, opts)
-              if (code) {
-                handleCodeGenerated(code, desc)
-              }
-              return code || ''
-            }}
-            onTransferToLibrary={(entry) => {
-              // 코드 라이브러리로 전송
-              CodeLibraryStorage.save({
-                title: entry.menuName,
-                type: 'automation',
-                description: entry.feature,
-                userRequest: entry.description,
-                code: entry.generatedCode,
-                targetSheets: [],
-                createdAt: entry.createdAt,
-                saved: true
-              })
-            }}
-          />
+          <div ref={codeGeneratorSectionRef}>
+            <EnhancedCodeGenerator
+              ref={codeGeneratorRef}
+              spreadsheetId={spreadsheetId}
+              spreadsheetTitle={spreadsheetTitle}
+              onGenerateCode={async (desc, opts) => {
+                const code = await onGenerateCode?.(desc, opts)
+                if (code) {
+                  handleCodeGenerated(code, desc)
+                }
+                return code || ''
+              }}
+              onTransferToLibrary={(entry) => {
+                // 코드 라이브러리로 전송
+                CodeLibraryStorage.save({
+                  title: entry.menuName,
+                  type: 'automation',
+                  description: entry.feature,
+                  userRequest: entry.description,
+                  code: entry.generatedCode,
+                  targetSheets: [],
+                  createdAt: entry.createdAt,
+                  saved: true
+                })
+              }}
+            />
+          </div>
 
           {/* 기존 AI 어시스턴트 및 대화 내역 */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
