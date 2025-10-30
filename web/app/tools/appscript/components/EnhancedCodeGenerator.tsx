@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useImperativeHandle, forwardRef, useEffect } from 'react'
 import { Code, Save, Edit2, Trash2, Plus, ArrowRight, FileCode } from 'lucide-react'
 
 interface CodeEntry {
@@ -18,22 +18,62 @@ interface EnhancedCodeGeneratorProps {
   spreadsheetTitle: string
   onGenerateCode?: (description: string, options?: any) => Promise<string>
   onTransferToLibrary?: (entry: CodeEntry) => void
+  initialData?: {
+    menuName?: string
+    feature?: string
+    description?: string
+    code?: string
+  }
 }
 
-export function EnhancedCodeGenerator({
-  spreadsheetId,
-  spreadsheetTitle,
-  onGenerateCode,
-  onTransferToLibrary
-}: EnhancedCodeGeneratorProps) {
-  const [menuName, setMenuName] = useState('')
-  const [feature, setFeature] = useState('')
-  const [description, setDescription] = useState('')
-  const [usageType, setUsageType] = useState<'temporary' | 'permanent'>('temporary')
-  const [generatedCode, setGeneratedCode] = useState('')
-  const [isGenerating, setIsGenerating] = useState(false)
-  const [entries, setEntries] = useState<CodeEntry[]>([])
-  const [editingId, setEditingId] = useState<string | null>(null)
+export interface EnhancedCodeGeneratorRef {
+  fillFormData: (data: {
+    menuName?: string
+    feature?: string
+    description?: string
+    code?: string
+  }) => void
+}
+
+export const EnhancedCodeGenerator = forwardRef<EnhancedCodeGeneratorRef, EnhancedCodeGeneratorProps>(
+  function EnhancedCodeGenerator(
+    {
+      spreadsheetId,
+      spreadsheetTitle,
+      onGenerateCode,
+      onTransferToLibrary,
+      initialData
+    },
+    ref
+  ) {
+    const [menuName, setMenuName] = useState('')
+    const [feature, setFeature] = useState('')
+    const [description, setDescription] = useState('')
+    const [usageType, setUsageType] = useState<'temporary' | 'permanent'>('temporary')
+    const [generatedCode, setGeneratedCode] = useState('')
+    const [isGenerating, setIsGenerating] = useState(false)
+    const [entries, setEntries] = useState<CodeEntry[]>([])
+    const [editingId, setEditingId] = useState<string | null>(null)
+
+    // 외부에서 데이터를 주입할 수 있는 메서드 노출
+    useImperativeHandle(ref, () => ({
+      fillFormData: (data) => {
+        if (data.menuName) setMenuName(data.menuName)
+        if (data.feature) setFeature(data.feature)
+        if (data.description) setDescription(data.description)
+        if (data.code) setGeneratedCode(data.code)
+      }
+    }))
+
+    // initialData가 변경되면 자동으로 폼 채우기
+    useEffect(() => {
+      if (initialData) {
+        if (initialData.menuName) setMenuName(initialData.menuName)
+        if (initialData.feature) setFeature(initialData.feature)
+        if (initialData.description) setDescription(initialData.description)
+        if (initialData.code) setGeneratedCode(initialData.code)
+      }
+    }, [initialData])
 
   const handleGenerate = async () => {
     if (!menuName || !feature || !description) {
@@ -353,4 +393,4 @@ export function EnhancedCodeGenerator({
       )}
     </div>
   )
-}
+})
