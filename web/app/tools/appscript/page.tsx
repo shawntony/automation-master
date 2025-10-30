@@ -662,13 +662,18 @@ export default function AppsScriptGeneratorPage() {
                   />
                 )}
 
+                {/*
+                  아래 섹션들은 모든 탭에서 중복 표시되어 주석처리함
+                  필요시 StructureAnalysis 컴포넌트 내부의 특정 탭으로 이동 필요
+                */}
+
                 {/* 데이터 정리 로드맵 - 중복으로 인해 임시 비활성화 */}
                 {/* {analysisResult && (
                   <DataCleaningRoadmap analysisResult={analysisResult} />
                 )} */}
 
-                {/* AI 어시스턴트 채팅 */}
-                {analysisResult && (
+                {/* AI 어시스턴트 채팅 - 중복으로 인해 임시 비활성화 */}
+                {/* {analysisResult && (
                   <div className="mt-8">
                     <AssistantChat
                       spreadsheetId={analysisResult.spreadsheetId}
@@ -676,32 +681,28 @@ export default function AppsScriptGeneratorPage() {
                       analysisResult={analysisResult}
                       onGenerateCode={(params) => {
                         console.log('[AssistantChat] 코드 생성 요청:', params)
-                        // 코드 생성기 탭으로 이동하거나 직접 생성 처리
-                        // 추후 CodeGeneratorChat과 연동
                       }}
                       onModifyCode={(params) => {
                         console.log('[AssistantChat] 코드 수정 요청:', params)
-                        // 코드 수정 처리
                       }}
                     />
                   </div>
-                )}
+                )} */}
 
-                {/* 코드 라이브러리 */}
-                <div className="mt-8">
+                {/* 코드 라이브러리 - 중복으로 인해 임시 비활성화 */}
+                {/* <div className="mt-8">
                   <CodeLibraryBrowser
                     onSelectCode={(item) => {
                       alert(`선택한 코드: ${item.code.title}\n\n사용 횟수가 증가했습니다.`)
-                      // 사용 횟수 증가
                       import('@/lib/code-library-storage').then(({ CodeLibraryStorage }) => {
                         CodeLibraryStorage.incrementUsage(item.id)
                       })
                     }}
                   />
-                </div>
+                </div> */}
 
-                {/* 샘플링 경고 메시지 */}
-                {analysisResult.samplingInfo?.used && (
+                {/* 샘플링 경고 메시지 - 중복으로 인해 임시 비활성화 */}
+                {/* {analysisResult.samplingInfo?.used && (
                   <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
                     <div className="flex items-start gap-3">
                       <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
@@ -718,10 +719,10 @@ export default function AppsScriptGeneratorPage() {
                       </div>
                     </div>
                   </div>
-                )}
+                )} */}
 
-                {/* Summary Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                {/* Summary Cards - 중복으로 인해 임시 비활성화 */}
+                {/* <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <div className="bg-white border rounded-lg p-4">
                     <div className="text-sm text-gray-500 mb-1">총 시트 수</div>
                     <div className="text-2xl font-bold text-blue-600">
@@ -746,10 +747,10 @@ export default function AppsScriptGeneratorPage() {
                       {analysisResult.complexity || 0}
                     </div>
                   </div>
-                </div>
+                </div> */}
 
-                {/* Formula Types */}
-                <div className="bg-white border rounded-lg p-6">
+                {/* Formula Types - 중복으로 인해 임시 비활성화 */}
+                {/* <div className="bg-white border rounded-lg p-6">
                   <h3 className="font-semibold mb-4">수식 유형별 분류</h3>
                   <div className="space-y-2">
                     {Object.entries(analysisResult.formulaTypes || {}).map(([type, count]: [string, any]) => (
@@ -762,10 +763,10 @@ export default function AppsScriptGeneratorPage() {
                       </div>
                     ))}
                   </div>
-                </div>
+                </div> */}
 
-                {/* Sheets List */}
-                <div className="bg-white border rounded-lg p-6">
+                {/* Sheets List - 중복으로 인해 임시 비활성화 */}
+                {/* <div className="bg-white border rounded-lg p-6">
                   <h3 className="font-semibold mb-4">시트 목록</h3>
                   <div className="space-y-3">
                     {analysisResult.sheets?.map((sheet: any, index: number) => (
@@ -780,7 +781,7 @@ export default function AppsScriptGeneratorPage() {
                       </div>
                     ))}
                   </div>
-                </div>
+                </div> */}
               </div>
             )}
 
