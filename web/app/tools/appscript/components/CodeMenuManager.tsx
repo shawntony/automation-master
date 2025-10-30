@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Menu, Plus, Edit, Trash2, Star, FolderPlus, ChevronRight, ChevronDown } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { Menu, Plus, Edit, Trash2, Star, FolderPlus, ChevronRight, ChevronDown, Download, Upload } from 'lucide-react'
 import type { CodeMenuItem, CodeMenuTreeNode } from '@/types/code-menu'
 import {
   getCodeMenus,
@@ -11,6 +11,7 @@ import {
   buildCodeMenuTree,
   getCategories
 } from '@/lib/code-menu-storage'
+import { exportMenus, importMenus } from '@/lib/export-import'
 
 interface CodeMenuManagerProps {
   /** 메뉴 선택 시 콜백 */
@@ -26,6 +27,7 @@ export function CodeMenuManager({ onSelectMenu, selectedMenuId }: CodeMenuManage
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [editingMenu, setEditingMenu] = useState<CodeMenuItem | null>(null)
   const [categories, setCategories] = useState<string[]>([])
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   // 폼 상태
   const [formData, setFormData] = useState({
@@ -126,6 +128,27 @@ export function CodeMenuManager({ onSelectMenu, selectedMenuId }: CodeMenuManage
     setShowCreateForm(false)
     setEditingMenu(null)
     setFormData({ menuName: '', description: '', category: '' })
+  }
+
+  const handleExport = () => {
+    exportMenus()
+    alert('메뉴를 내보냈습니다!')
+  }
+
+  const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    const result = await importMenus(file)
+    alert(result.message)
+    if (result.success) {
+      loadMenus()
+    }
+
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
   }
 
   const renderTreeNode = (node: CodeMenuTreeNode, depth: number = 0) => {
@@ -234,16 +257,41 @@ export function CodeMenuManager({ onSelectMenu, selectedMenuId }: CodeMenuManage
           <Menu className="h-5 w-5" />
           코드 메뉴
         </h3>
-        <button
-          onClick={() => {
-            setShowCreateForm(true)
-            setEditingMenu(null)
-          }}
-          className="flex items-center gap-1 px-3 py-1.5 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors text-sm"
-        >
-          <Plus className="h-4 w-4" />
-          새 메뉴
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={handleExport}
+            className="flex items-center gap-1 px-3 py-1.5 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors text-sm"
+            title="메뉴 내보내기"
+          >
+            <Download className="h-4 w-4" />
+            내보내기
+          </button>
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="flex items-center gap-1 px-3 py-1.5 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors text-sm"
+            title="메뉴 가져오기"
+          >
+            <Upload className="h-4 w-4" />
+            가져오기
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".json"
+            onChange={handleImport}
+            className="hidden"
+          />
+          <button
+            onClick={() => {
+              setShowCreateForm(true)
+              setEditingMenu(null)
+            }}
+            className="flex items-center gap-1 px-3 py-1.5 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors text-sm"
+          >
+            <Plus className="h-4 w-4" />
+            새 메뉴
+          </button>
+        </div>
       </div>
 
       {/* 생성/수정 폼 */}

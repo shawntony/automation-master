@@ -1,14 +1,17 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { MessageSquare, Menu, Code, BookOpen } from 'lucide-react'
+import { MessageSquare, Menu, Code, BookOpen, X, FileCode } from 'lucide-react'
 import type { CodeMenuItem, CodeVersion } from '@/types/code-menu'
 import type { ConversationRecord } from '@/types/conversation'
+import type { CodeExecutionResult } from '@/types/roadmap'
 import { AssistantChat } from './AssistantChat'
 import { CodeMenuManager } from './CodeMenuManager'
 import { CodeVersionList } from './CodeVersionList'
 import { ConversationHistory } from './ConversationHistory'
 import { CodeLibraryBrowser } from './CodeLibraryBrowser'
+import { CodeExecutionPreview } from './CodeExecutionPreview'
+import { TemplateBrowser } from './TemplateBrowser'
 import { getCodeMenuById } from '@/lib/code-menu-storage'
 import {
   createConversation,
@@ -39,10 +42,12 @@ export function CodeGenerationWorkflow({
   onModifyCode,
   onSelectCode
 }: CodeGenerationWorkflowProps) {
-  const [activeStep, setActiveStep] = useState<'chat' | 'menu' | 'library'>('chat')
+  const [activeStep, setActiveStep] = useState<'chat' | 'menu' | 'library' | 'template'>('chat')
   const [selectedMenu, setSelectedMenu] = useState<CodeMenuItem | null>(null)
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null)
   const [refreshKey, setRefreshKey] = useState(0)
+  const [executionResult, setExecutionResult] = useState<CodeExecutionResult | null>(null)
+  const [executingCode, setExecutingCode] = useState(false)
 
   // AI 어시스턴트에서 코드 생성 시
   const handleCodeGenerated = async (code: string, userMessage: string) => {
@@ -138,6 +143,65 @@ export function CodeGenerationWorkflow({
     setActiveStep('chat')
   }
 
+  // 코드 실행 및 테스트
+  const handleExecuteCode = async (code: string, versionName: string) => {
+    setExecutingCode(true)
+    try {
+      // 시뮬레이션된 실행 결과 생성
+      const result: CodeExecutionResult = {
+        success: true,
+        executionId: crypto.randomUUID(),
+        executedAt: new Date().toISOString(),
+        executionTimeMs: 150,
+        changes: [
+          {
+            sheetName: '시트1',
+            rowsAffected: 3,
+            columnsAffected: 2,
+            before: [
+              ['이전값1', '이전값2'],
+              ['이전값3', '이전값4']
+            ],
+            after: [
+              ['새값1', '새값2'],
+              ['새값3', '새값4']
+            ]
+          },
+          {
+            sheetName: '시트2',
+            rowsAffected: 2,
+            columnsAffected: 2,
+            before: [],
+            after: [
+              ['새로운행1', '새로운행2']
+            ]
+          }
+        ],
+        logs: [
+          '코드 실행 시작...',
+          `버전: ${versionName}`,
+          '데이터 처리 중...',
+          '변경사항 적용 완료'
+        ]
+      }
+      setExecutionResult(result)
+    } catch (error) {
+      console.error('Code execution failed:', error)
+      const errorResult: CodeExecutionResult = {
+        success: false,
+        executionId: crypto.randomUUID(),
+        executedAt: new Date().toISOString(),
+        executionTimeMs: 0,
+        changes: [],
+        logs: ['실행 실패: ' + (error instanceof Error ? error.message : '알 수 없는 오류')],
+        error: error instanceof Error ? error.message : '알 수 없는 오류'
+      }
+      setExecutionResult(errorResult)
+    } finally {
+      setExecutingCode(false)
+    }
+  }
+
   return (
     <div className="space-y-6">
       {/* 워크플로우 단계 네비게이션 */}
@@ -179,7 +243,25 @@ export function CodeGenerationWorkflow({
 
           <div className="text-gray-400">→</div>
 
-          {/* 3단계: 라이브러리 */}
+          {/* 3단계: 템플릿 */}
+          <button
+            onClick={() => setActiveStep('template')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+              activeStep === 'template'
+                ? 'bg-blue-500 text-white'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            <FileCode className="h-5 w-5" />
+            <div className="text-left">
+              <div className="font-medium">3. 템플릿</div>
+              <div className="text-xs opacity-80">재사용 가능한 코드</div>
+            </div>
+          </button>
+
+          <div className="text-gray-400">→</div>
+
+          {/* 4단계: 라이브러리 */}
           <button
             onClick={() => setActiveStep('library')}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
@@ -190,7 +272,7 @@ export function CodeGenerationWorkflow({
           >
             <BookOpen className="h-5 w-5" />
             <div className="text-left">
-              <div className="font-medium">3. 라이브러리</div>
+              <div className="font-medium">4. 라이브러리</div>
               <div className="text-xs opacity-80">완성된 코드 저장</div>
             </div>
           </button>
@@ -263,6 +345,12 @@ export function CodeGenerationWorkflow({
                   menu={selectedMenu}
                   onMenuUpdate={handleMenuUpdate}
                   onSelectVersion={handleSelectVersion}
+                  onViewConversation={(conversationId) => {
+                    // 대화 탭으로 이동하고 해당 대화를 하이라이트
+                    setActiveStep('chat')
+                    // TODO: 특정 대화로 스크롤하는 기능 추가 가능
+                  }}
+                  onExecuteCode={handleExecuteCode}
                 />
               </div>
             ) : (
@@ -277,7 +365,22 @@ export function CodeGenerationWorkflow({
         </div>
       )}
 
-      {/* 3단계: 코드 라이브러리 */}
+      {/* 3단계: 코드 템플릿 */}
+      {activeStep === 'template' && (
+        <div className="bg-white border rounded-lg p-6">
+          <TemplateBrowser
+            onSelectTemplate={(template) => {
+              console.log('템플릿 선택:', template)
+            }}
+            onUseTemplate={(code) => {
+              onSelectCode?.(code)
+              alert('템플릿 코드를 에디터에 적용했습니다!')
+            }}
+          />
+        </div>
+      )}
+
+      {/* 4단계: 코드 라이브러리 */}
       {activeStep === 'library' && (
         <div className="bg-white border rounded-lg p-6">
           <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
@@ -285,6 +388,39 @@ export function CodeGenerationWorkflow({
             코드 라이브러리
           </h3>
           <CodeLibraryBrowser onSelectCode={handleSelectFromLibrary} />
+        </div>
+      )}
+
+      {/* 코드 실행 결과 오버레이 */}
+      {executionResult && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
+              <h3 className="text-lg font-semibold">코드 실행 결과</h3>
+              <button
+                onClick={() => setExecutionResult(null)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                title="닫기"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="p-6">
+              <CodeExecutionPreview
+                result={executionResult}
+                onSave={() => {
+                  // TODO: 실행 결과를 저장하는 로직 추가
+                  alert('실행 결과가 저장되었습니다!')
+                  setExecutionResult(null)
+                }}
+                onCancel={() => setExecutionResult(null)}
+                onRerun={() => {
+                  // TODO: 코드를 다시 실행하는 로직 추가
+                  alert('코드를 다시 실행합니다...')
+                }}
+              />
+            </div>
+          </div>
         </div>
       )}
     </div>

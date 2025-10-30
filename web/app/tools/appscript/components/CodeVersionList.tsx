@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
-import { Code, Edit, Trash2, Check, Plus, Clock, FileCode } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Code, Edit, Trash2, Check, Plus, Clock, FileCode, MessageSquare, ExternalLink, Play } from 'lucide-react'
 import type { CodeMenuItem, CodeVersion, CodeStatus } from '@/types/code-menu'
+import type { ConversationRecord } from '@/types/conversation'
 import {
   addCodeVersion,
   updateCodeVersion,
@@ -10,6 +11,7 @@ import {
   setActiveVersion,
   toggleCodeStatus
 } from '@/lib/code-menu-storage'
+import { getConversations } from '@/lib/conversation-storage'
 
 interface CodeVersionListProps {
   /** 선택된 메뉴 */
@@ -18,16 +20,28 @@ interface CodeVersionListProps {
   onMenuUpdate?: () => void
   /** 버전 선택 시 콜백 */
   onSelectVersion?: (version: CodeVersion) => void
+  /** 대화로 이동 콜백 */
+  onViewConversation?: (conversationId: string) => void
+  /** 코드 실행 콜백 */
+  onExecuteCode?: (code: string, versionName: string) => void
 }
 
-export function CodeVersionList({ menu, onMenuUpdate, onSelectVersion }: CodeVersionListProps) {
+export function CodeVersionList({ menu, onMenuUpdate, onSelectVersion, onViewConversation, onExecuteCode }: CodeVersionListProps) {
   const [showAddForm, setShowAddForm] = useState(false)
   const [editingVersion, setEditingVersion] = useState<CodeVersion | null>(null)
+  const [linkedConversation, setLinkedConversation] = useState<ConversationRecord | null>(null)
   const [formData, setFormData] = useState({
     versionName: '',
     description: '',
     code: ''
   })
+
+  // 연결된 대화 찾기
+  useEffect(() => {
+    const conversations = getConversations()
+    const linked = conversations.find(conv => conv.linkedMenuId === menu.id)
+    setLinkedConversation(linked || null)
+  }, [menu.id])
 
   const handleAddVersion = () => {
     if (!formData.versionName.trim()) {
@@ -132,21 +146,33 @@ export function CodeVersionList({ menu, onMenuUpdate, onSelectVersion }: CodeVer
           버전 관리
           <span className="text-sm text-gray-500">({menu.versions.length}개)</span>
         </h4>
-        <button
-          onClick={() => {
-            setShowAddForm(true)
-            setEditingVersion(null)
-            setFormData({
-              versionName: `v${menu.versions.length + 1}`,
-              description: '',
-              code: menu.versions[0]?.code || ''
-            })
-          }}
-          className="flex items-center gap-1 px-3 py-1.5 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors text-sm"
-        >
-          <Plus className="h-4 w-4" />
-          새 버전
-        </button>
+        <div className="flex gap-2">
+          {linkedConversation && onViewConversation && (
+            <button
+              onClick={() => onViewConversation(linkedConversation.id)}
+              className="flex items-center gap-1 px-3 py-1.5 bg-green-50 text-green-600 border border-green-200 rounded hover:bg-green-100 transition-colors text-sm"
+              title="원본 대화 보기"
+            >
+              <MessageSquare className="h-4 w-4" />
+              원본 대화
+            </button>
+          )}
+          <button
+            onClick={() => {
+              setShowAddForm(true)
+              setEditingVersion(null)
+              setFormData({
+                versionName: `v${menu.versions.length + 1}`,
+                description: '',
+                code: menu.versions[0]?.code || ''
+              })
+            }}
+            className="flex items-center gap-1 px-3 py-1.5 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors text-sm"
+          >
+            <Plus className="h-4 w-4" />
+            새 버전
+          </button>
+        </div>
       </div>
 
       {/* 추가/수정 폼 */}
@@ -275,11 +301,22 @@ export function CodeVersionList({ menu, onMenuUpdate, onSelectVersion }: CodeVer
 
             {/* 코드 미리보기 */}
             {version.code && (
-              <div className="bg-gray-900 text-gray-100 rounded p-3 mb-2">
-                <pre className="text-xs overflow-x-auto">
-                  <code>{version.code.substring(0, 200)}</code>
-                  {version.code.length > 200 && <span className="text-gray-500">...</span>}
-                </pre>
+              <div className="space-y-2">
+                <div className="bg-gray-900 text-gray-100 rounded p-3">
+                  <pre className="text-xs overflow-x-auto">
+                    <code>{version.code.substring(0, 200)}</code>
+                    {version.code.length > 200 && <span className="text-gray-500">...</span>}
+                  </pre>
+                </div>
+                {onExecuteCode && (
+                  <button
+                    onClick={() => onExecuteCode(version.code, version.versionName)}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
+                  >
+                    <Play className="h-4 w-4" />
+                    코드 실행 및 테스트
+                  </button>
+                )}
               </div>
             )}
 

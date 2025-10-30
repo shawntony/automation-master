@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { MessageSquare, Star, Code, Menu, Trash2, Search, Calendar } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { MessageSquare, Star, Code, Menu, Trash2, Search, Calendar, Download, Upload } from 'lucide-react'
 import type { ConversationRecord, ConversationFilter } from '@/types/conversation'
 import {
   getConversations,
@@ -11,6 +11,7 @@ import {
   updateConversation,
   getConversationStats
 } from '@/lib/conversation-storage'
+import { exportConversations, importConversations } from '@/lib/export-import'
 
 interface ConversationHistoryProps {
   /** 대화 선택 시 콜백 */
@@ -27,6 +28,7 @@ export function ConversationHistory({
   const [filteredConversations, setFilteredConversations] = useState<ConversationRecord[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [filterType, setFilterType] = useState<'all' | 'code' | 'menu' | 'saved'>('all')
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const [stats, setStats] = useState({
     total: 0,
     withCode: 0,
@@ -100,6 +102,27 @@ export function ConversationHistory({
     loadConversations()
   }
 
+  const handleExport = () => {
+    exportConversations()
+    alert('대화 내역을 내보냈습니다!')
+  }
+
+  const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    const result = await importConversations(file)
+    alert(result.message)
+    if (result.success) {
+      loadConversations()
+    }
+
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }
+
   const formatDate = (date: Date) => {
     const now = new Date()
     const diffMs = now.getTime() - date.getTime()
@@ -127,12 +150,39 @@ export function ConversationHistory({
           <MessageSquare className="h-5 w-5" />
           대화 내역
         </h3>
-        <div className="flex gap-2 text-sm text-gray-600">
-          <span>전체 {stats.total}</span>
-          <span>·</span>
-          <span>코드 {stats.withCode}</span>
-          <span>·</span>
-          <span>메뉴 {stats.withMenu}</span>
+        <div className="flex items-center gap-4">
+          <div className="flex gap-2 text-sm text-gray-600">
+            <span>전체 {stats.total}</span>
+            <span>·</span>
+            <span>코드 {stats.withCode}</span>
+            <span>·</span>
+            <span>메뉴 {stats.withMenu}</span>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={handleExport}
+              className="flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors text-xs"
+              title="대화 내보내기"
+            >
+              <Download className="h-3 w-3" />
+              내보내기
+            </button>
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors text-xs"
+              title="대화 가져오기"
+            >
+              <Upload className="h-3 w-3" />
+              가져오기
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".json"
+              onChange={handleImport}
+              className="hidden"
+            />
+          </div>
         </div>
       </div>
 
