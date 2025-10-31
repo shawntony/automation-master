@@ -50,6 +50,7 @@ export function CodeGenerationWorkflow({
   const [refreshKey, setRefreshKey] = useState(0)
   const [executionResult, setExecutionResult] = useState<CodeExecutionResult | null>(null)
   const [executingCode, setExecutingCode] = useState(false)
+  const [lastExecutedCode, setLastExecutedCode] = useState<string>('')
 
   // EnhancedCodeGenerator ref와 스크롤 ref
   const codeGeneratorRef = useRef<EnhancedCodeGeneratorRef>(null)
@@ -172,6 +173,7 @@ export function CodeGenerationWorkflow({
   // 코드 실행 및 테스트
   const handleExecuteCode = async (code: string, versionName: string) => {
     setExecutingCode(true)
+    setLastExecutedCode(code)
     try {
       // 시뮬레이션된 실행 결과 생성
       const result: CodeExecutionResult = {
@@ -425,18 +427,42 @@ export function CodeGenerationWorkflow({
 
       {/* 3단계: 코드 템플릿 */}
       {activeStep === 'template' && (
-        <div className="bg-white border rounded-lg p-6">
-          <TemplateBrowser
-            onSelectTemplate={(template) => {
-              console.log('템플릿 선택:', template)
-            }}
-            onUseTemplate={(code) => {
-              onSelectCode?.(code)
-              alert('템플릿 코드를 에디터에 적용했습니다!')
-            }}
-          />
-        </div>
-      )}
+          <div className="bg-white border rounded-lg p-6">
+            <TemplateBrowser
+              onSelectTemplate={(template) => {
+                console.log('템플릿 선택:', template)
+              }}
+              onUseTemplate={(code) => {
+                onSelectCode?.(code)
+                alert('템플릿 코드를 에디터에 적용했습니다!')
+              }}
+              onFillGenerator={(template) => {
+                // 템플릿으로 코드 생성기 채우기
+                if (codeGeneratorRef.current) {
+                  codeGeneratorRef.current.fillFormData({
+                    menuName: template.name,
+                    feature: template.name,
+                    description: template.description,
+                    code: template.code
+                  })
+
+                  // AI 대화 탭으로 이동
+                  setActiveStep('chat')
+
+                  // 코드 생성기로 스크롤
+                  setTimeout(() => {
+                    codeGeneratorSectionRef.current?.scrollIntoView({
+                      behavior: 'smooth',
+                      block: 'start'
+                    })
+                  }, 100)
+
+                  alert('템플릿이 코드 생성기에 적용되었습니다!')
+                }
+              }}
+            />
+          </div>
+        )}
 
       {/* 4단계: 코드 라이브러리 */}
       {activeStep === 'library' && (
@@ -465,17 +491,22 @@ export function CodeGenerationWorkflow({
             </div>
             <div className="p-6">
               <CodeExecutionPreview
-                result={executionResult}
-                onSave={() => {
-                  // TODO: 실행 결과를 저장하는 로직 추가
-                  alert('실행 결과가 저장되었습니다!')
-                  setExecutionResult(null)
-                }}
-                onCancel={() => setExecutionResult(null)}
-                onRerun={() => {
-                  // TODO: 코드를 다시 실행하는 로직 추가
-                  alert('코드를 다시 실행합니다...')
-                }}
+                  result={executionResult}
+                  menuId={selectedMenu?.id}
+                  versionId={selectedMenu?.versions.find(v => v.isActive)?.id}
+                  versionName={selectedMenu?.versions.find(v => v.isActive)?.versionName}
+                  executedCode={lastExecutedCode}
+                  onHistorySaved={() => {
+                    setRefreshKey((prev) => prev + 1)
+                  }}
+                  onSave={() => {
+                    alert('실행 결과가 저장되었습니다!')
+                    setExecutionResult(null)
+                  }}
+                  onCancel={() => setExecutionResult(null)}
+                  onRerun={() => {
+                    alert('코드를 다시 실행합니다...')
+                  }}
               />
             </div>
           </div>

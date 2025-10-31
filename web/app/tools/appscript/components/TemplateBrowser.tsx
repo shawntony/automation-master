@@ -12,7 +12,8 @@ import {
   Copy,
   TrendingUp,
   Calendar,
-  Filter
+  Filter,
+  ArrowRight
 } from 'lucide-react'
 import type { CodeTemplate, TemplateFilter, TemplateSortOptions } from '@/types/code-template'
 import {
@@ -32,9 +33,10 @@ import {
 interface TemplateBrowserProps {
   onSelectTemplate?: (template: CodeTemplate) => void
   onUseTemplate?: (code: string) => void
+  onFillGenerator?: (template: CodeTemplate) => void
 }
 
-export function TemplateBrowser({ onSelectTemplate, onUseTemplate }: TemplateBrowserProps) {
+export function TemplateBrowser({ onSelectTemplate, onUseTemplate, onFillGenerator }: TemplateBrowserProps) {
   const [templates, setTemplates] = useState<CodeTemplate[]>([])
   const [filteredTemplates, setFilteredTemplates] = useState<CodeTemplate[]>([])
   const [selectedTemplate, setSelectedTemplate] = useState<CodeTemplate | null>(null)
@@ -479,15 +481,24 @@ export function TemplateBrowser({ onSelectTemplate, onUseTemplate }: TemplateBro
               </div>
 
               {/* 액션 버튼 */}
-              <div className="flex gap-2 mt-3" onClick={(e) => e.stopPropagation()}>
-                <button
-                  onClick={() => handleUseTemplate(template)}
-                  className="flex-1 px-3 py-1.5 bg-green-500 text-white rounded hover:bg-green-600 transition-colors text-sm"
-                >
-                  사용
-                </button>
-                <button
-                  onClick={() => handleCopyCode(template.code)}
+               <div className="flex gap-2 mt-3" onClick={(e) => e.stopPropagation()}>
+                  <button
+                    onClick={() => handleUseTemplate(template)}
+                    className="flex-1 px-3 py-1.5 bg-green-500 text-white rounded hover:bg-green-600 transition-colors text-sm"
+                  >
+                    사용
+                  </button>
+                  {onFillGenerator && (
+                    <button
+                      onClick={() => onFillGenerator(template)}
+                      className="px-3 py-1.5 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors text-sm flex items-center gap-1"
+                      title="코드 생성기에 채우기"
+                    >
+                      <ArrowRight className="h-4 w-4" />
+                    </button>
+                  )}
+                  <button
+                    onClick={() => handleCopyCode(template.code)}
                   className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors text-sm"
                   title="코드 복사"
                 >

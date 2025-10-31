@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useImperativeHandle, forwardRef, useEffect } from 'react'
-import { Code, Save, Edit2, Trash2, Plus, ArrowRight, FileCode } from 'lucide-react'
+import { Code, Save, Edit2, Trash2, Plus, ArrowRight, FileCode, BookmarkPlus } from 'lucide-react'
+import { createTemplate } from '@/lib/template-storage'
 
 interface CodeEntry {
   id: string
@@ -140,7 +141,50 @@ export const EnhancedCodeGenerator = forwardRef<EnhancedCodeGeneratorRef, Enhanc
 
     alert('저장되었습니다!')
   }
+   const handleSaveAsTemplate = () => {
+      if (!generatedCode) {
+        alert('저장할 코드가 없습니다.')
+        return
+      }
 
+      const templateName = prompt('템플릿 이름을 입력하세요:', menuName || '새 템플릿')
+      if (!templateName) return
+
+      const templateDescription = prompt(
+        '템플릿 설명을 입력하세요:',
+        feature || description
+      )
+
+      try {
+        const categoryInput = prompt(
+          '카테고리를 입력하세요 (기본값: 사용자 생성):',
+          '사용자 생성'
+        )
+
+        const tagsInput = prompt(
+          '태그를 쉼표로 구분하여 입력하세요:',
+          '자동생성, 사용자'
+        )
+        const tags = tagsInput ? tagsInput.split(',').map(t => t.trim()) : []
+
+        createTemplate(
+          templateName,
+          templateDescription || '자동 생성된 템플릿',
+          generatedCode,
+          {
+            category: categoryInput || '사용자 생성',
+            tags
+          }
+        )
+
+        alert('템플릿으로 저장되었습니다!')
+      } catch (error) {
+        console.error('템플릿 저장 실패:', error)
+        alert('템플릿 저장에 실패했습니다.')
+      }
+    }
+
+  
   const handleEdit = (entry: CodeEntry) => {
     setEditingId(entry.id)
     setMenuName(entry.menuName)
@@ -286,13 +330,22 @@ export const EnhancedCodeGenerator = forwardRef<EnhancedCodeGeneratorRef, Enhanc
             <div className="bg-gray-50 rounded-lg p-4 border">
               <div className="flex items-center justify-between mb-2">
                 <h4 className="text-sm font-semibold text-gray-700">생성된 코드</h4>
-                <button
-                  onClick={handleSave}
-                  className="flex items-center gap-1 px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition-colors"
-                >
-                  <Save className="h-4 w-4" />
-                  저장
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleSaveAsTemplate}
+                    className="flex items-center gap-1 px-3 py-1 bg-purple-600 text-white text-sm rounded hover:bg-purple-700 transition-colors"
+                  >
+                    <BookmarkPlus className="h-4 w-4" />
+                    템플릿으로 저장
+                  </button>
+                  <button
+                    onClick={handleSave}
+                    className="flex items-center gap-1 px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition-colors"
+                  >
+                    <Save className="h-4 w-4" />
+                    저장
+                  </button>
+                </div>
               </div>
               <pre className="bg-white border rounded p-3 text-sm overflow-x-auto">
                 <code>{generatedCode}</code>

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Code, Edit, Trash2, Check, Plus, Clock, FileCode, MessageSquare, ExternalLink, Play } from 'lucide-react'
+import { Code, Edit, Trash2, Check, Plus, Clock, FileCode, MessageSquare, ExternalLink, Play, ArrowLeftRight, Copy as CopyIcon } from 'lucide-react'
 import type { CodeMenuItem, CodeVersion, CodeStatus } from '@/types/code-menu'
 import type { ConversationRecord } from '@/types/conversation'
 import {
@@ -12,7 +12,7 @@ import {
   toggleCodeStatus
 } from '@/lib/code-menu-storage'
 import { getConversations } from '@/lib/conversation-storage'
-
+import { CodeVersionCompare } from './CodeVersionCompare'
 interface CodeVersionListProps {
   /** 선택된 메뉴 */
   menu: CodeMenuItem
@@ -30,6 +30,7 @@ export function CodeVersionList({ menu, onMenuUpdate, onSelectVersion, onViewCon
   const [showAddForm, setShowAddForm] = useState(false)
   const [editingVersion, setEditingVersion] = useState<CodeVersion | null>(null)
   const [linkedConversation, setLinkedConversation] = useState<ConversationRecord | null>(null)
+  const [compareVersions, setCompareVersions] = useState<{ v1: CodeVersion; v2: CodeVersion } | null>(null)
   const [formData, setFormData] = useState({
     versionName: '',
     description: '',
@@ -94,6 +95,56 @@ export function CodeVersionList({ menu, onMenuUpdate, onSelectVersion, onViewCon
   const handleSetActive = (version: CodeVersion) => {
     setActiveVersion(menu.id, version.id)
     onMenuUpdate?.()
+  }
+
+   const handleCompareVersions = (version: CodeVersion) => {
+    const versions = menu.versions || []
+    if (versions.length < 2) {
+      alert('비교할 다른 버전이 없습니다.')
+      return
+    }
+
+    const otherVersionName = prompt(
+    '비교할 버전 이름을 입력하세요:\n' +
+      versions
+        .filter((v) => v.id !== version.id)
+        .map((v) => `${v.versionName}: ${v.description || '설명 없음'}`)
+        .join('\n')
+    )
+
+  if (!otherVersionName) return
+
+  const otherVersion = versions.find(
+    (v) => v.versionName === otherVersionName
+    )
+
+    if (!otherVersion) {
+      alert('해당 버전을 찾을 수 없습니다.')
+      return
+    }
+
+    setCompareVersions({ v1: version, v2: otherVersion })
+  }
+
+  const handleDuplicateVersion = (version: CodeVersion) => {
+    const newDescription = prompt(
+      '새 버전 설명을 입력하세요:',
+      `${version.description} (복사본)`
+    )
+
+    if (!newDescription) return
+
+    const newVersionName = `${version.versionName} (복사본)`
+
+  addCodeVersion(menu.id, version.code, {
+    versionName: newVersionName,
+    description: newDescription,
+    status: 'draft',
+    setAsActive: false
+  })
+
+  onMenuUpdate?.()
+  alert('버전이 복제되었습니다!')
   }
 
   const handleToggleStatus = (version: CodeVersion) => {
@@ -291,6 +342,20 @@ export function CodeVersionList({ menu, onMenuUpdate, onSelectVersion, onViewCon
                 >
                   <Trash2 className="h-4 w-4 text-red-500" />
                 </button>
+                 <button
+                    onClick={() => handleCompareVersions(version)}
+                    className="p-1.5 text-purple-600 hover:bg-purple-50 rounded transition-colors"
+                    title="버전 비교"
+                  >
+                    <ArrowLeftRight className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => handleDuplicateVersion(version)}
+                    className="p-1.5 text-teal-600 hover:bg-teal-50 rounded transition-colors"
+                    title="버전 복제"
+                  >
+                    <CopyIcon className="h-4 w-4" />
+                  </button>
               </div>
             </div>
 
@@ -333,6 +398,29 @@ export function CodeVersionList({ menu, onMenuUpdate, onSelectVersion, onViewCon
           </div>
         ))}
       </div>
+       {/* 버전 비교 모달 */}
+        {compareVersions && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+              <div className="p-4 border-b flex items-center justify-between">
+                <h3 className="text-lg font-semibold">버전 비교</h3>
+                <button
+                  onClick={() => setCompareVersions(null)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="flex-1 overflow-auto p-4">
+                <CodeVersionCompare
+                  version1={compareVersions.v1}
+                  version2={compareVersions.v2}
+                  onClose={() => setCompareVersions(null)}
+                />
+              </div>
+            </div>
+          </div>
+        )}
     </div>
   )
 }
