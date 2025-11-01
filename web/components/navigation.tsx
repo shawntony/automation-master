@@ -21,7 +21,8 @@ import {
   TrendingUp,
   Presentation,
   BookOpen,
-  FolderPlus
+  FolderPlus,
+  GitMerge
 } from 'lucide-react'
 
 const navItems = [
@@ -40,6 +41,12 @@ const navItems = [
     href: '/create-project',
     icon: FolderPlus,
     badge: 'NEW'
+  },
+  {
+    name: '통합 워크플로우',
+    href: '/unified-workflow',
+    icon: GitMerge,
+    badge: 'BETA'
   },
   {
     name: '웹앱 생성기',
