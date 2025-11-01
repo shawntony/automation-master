@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import {
   Play, Pause, RotateCcw, CheckCircle2, AlertCircle, Clock,
-  FileSpreadsheet, ArrowRight, Settings, Download, X, Loader2, BarChart3
+  FileSpreadsheet, ArrowRight, Settings, Download, X, Loader2, BarChart3, FileText
 } from 'lucide-react'
 import type {
   MigrationConfig,
@@ -21,6 +21,8 @@ interface MigrationWizardProps {
 }
 
 export function MigrationWizard({ analysisResult, onComplete, onCancel }: MigrationWizardProps) {
+  const STORAGE_KEY = `migration-state-${analysisResult.spreadsheetId}`
+
   const [step, setStep] = useState<'config' | 'running' | 'complete'>('config')
   const [migrationConfig, setMigrationConfig] = useState<MigrationConfig>({
     sourceSpreadsheetId: analysisResult.spreadsheetId,
@@ -41,6 +43,49 @@ export function MigrationWizard({ analysisResult, onComplete, onCancel }: Migrat
 
   const [migrationState, setMigrationState] = useState<MigrationState | null>(null)
   const [isCreatingSheet, setIsCreatingSheet] = useState(false)
+
+  // 컴포넌트 마운트 시 저장된 상태 복원
+  useEffect(() => {
+    const savedState = localStorage.getItem(STORAGE_KEY)
+    if (savedState) {
+      try {
+        const parsed = JSON.parse(savedState)
+        // 진행 중이거나 완료된 마이그레이션이 있으면 복원
+        if (parsed.migrationState && (parsed.step === 'running' || parsed.step === 'complete')) {
+          const shouldResume = confirm(
+            `이전에 진행하던 마이그레이션이 있습니다.\n\n` +
+            `완료: ${parsed.migrationState.completedSheets}/${parsed.migrationState.totalSheets}개 시트\n` +
+            `실패: ${parsed.migrationState.failedSheets}개\n\n` +
+            `이어서 진행하시겠습니까?`
+          )
+
+          if (shouldResume) {
+            setMigrationConfig(parsed.config)
+            setMigrationState(parsed.migrationState)
+            setStep(parsed.step)
+          } else {
+            // 사용자가 거부하면 저장된 상태 삭제
+            localStorage.removeItem(STORAGE_KEY)
+          }
+        }
+      } catch (error) {
+        console.error('저장된 상태 복원 실패:', error)
+        localStorage.removeItem(STORAGE_KEY)
+      }
+    }
+  }, [])
+
+  // 상태 변경 시 localStorage에 저장
+  useEffect(() => {
+    if (migrationState) {
+      const stateToSave = {
+        step,
+        config: migrationConfig,
+        migrationState
+      }
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave))
+    }
+  }, [step, migrationConfig, migrationState])
 
   // 새 스프레드시트 생성
   const handleCreateTargetSheet = async () => {
@@ -192,12 +237,22 @@ export function MigrationWizard({ analysisResult, onComplete, onCancel }: Migrat
         if (data.success) {
           updateSheetStatus(sheetName, 'completed', 100)
           state.completedSheets++
+          // React 상태 업데이트
+          setMigrationState(prev => prev ? {
+            ...prev,
+            completedSheets: prev.completedSheets + 1
+          } : null)
         } else {
           updateSheetStatus(sheetName, 'failed', 0, {
             message: data.error || '복사 실패',
             code: 'COPY_ERROR'
           })
           state.failedSheets++
+          // React 상태 업데이트
+          setMigrationState(prev => prev ? {
+            ...prev,
+            failedSheets: prev.failedSheets + 1
+          } : null)
         }
       } catch (error) {
         console.error(`시트 복사 오류 (${sheetName}):`, error)
@@ -206,6 +261,11 @@ export function MigrationWizard({ analysisResult, onComplete, onCancel }: Migrat
           code: 'NETWORK_ERROR'
         })
         state.failedSheets++
+        // React 상태 업데이트
+        setMigrationState(prev => prev ? {
+          ...prev,
+          failedSheets: prev.failedSheets + 1
+        } : null)
       }
 
       // 잠시 대기 (API rate limit 방지)
@@ -261,7 +321,24 @@ export function MigrationWizard({ analysisResult, onComplete, onCancel }: Migrat
             </div>
           </div>
           <button
-            onClick={onCancel}
+            onClick={() => {
+              // 진행 중인 마이그레이션이 있으면 확인
+              if (step === 'running' && migrationState) {
+                const shouldCancel = confirm(
+                  '마이그레이션이 진행 중입니다.\n\n' +
+                  '취소하면 진행 상태가 저장되어 나중에 이어서 할 수 있습니다.\n\n' +
+                  '정말 취소하시겠습니까?'
+                )
+                if (!shouldCancel) return
+              }
+
+              // 완료된 경우에만 저장된 상태 삭제
+              if (step === 'complete') {
+                localStorage.removeItem(STORAGE_KEY)
+              }
+
+              onCancel()
+            }}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
           >
             <X className="h-5 w-5" />
@@ -288,7 +365,11 @@ export function MigrationWizard({ analysisResult, onComplete, onCancel }: Migrat
           {step === 'complete' && migrationState && (
             <CompleteStep
               migrationState={migrationState}
-              onComplete={() => onComplete(migrationState)}
+              onComplete={() => {
+                // 마이그레이션 완료 시 저장된 상태 삭제
+                localStorage.removeItem(STORAGE_KEY)
+                onComplete(migrationState)
+              }}
             />
           )}
         </div>
@@ -308,37 +389,44 @@ function ConfigStep({
 }: any) {
   return (
     <div className="space-y-6">
-      {/* 1. 새 스프레드시트 생성 */}
+      {/* 1. 새 스프레드시트 준비 */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
         <h3 className="font-semibold text-lg mb-2 flex items-center gap-2">
           <span className="bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm">1</span>
-          새 스프레드시트 생성
+          새 스프레드시트 준비
         </h3>
         <p className="text-sm text-gray-600 mb-3">
-          원본을 보존하고 새 스프레드시트에 점진적으로 복사합니다
+          ① Google Drive에서 빈 스프레드시트를 생성하고 <br />
+          ② 아래에 URL을 붙여넣으세요
         </p>
         {!config.targetSpreadsheetId ? (
-          <button
-            onClick={onCreateSheet}
-            disabled={isCreatingSheet}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
-          >
-            {isCreatingSheet ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                생성 중...
-              </>
-            ) : (
-              <>
-                <FileSpreadsheet className="h-4 w-4" />
-                새 스프레드시트 생성
-              </>
-            )}
-          </button>
+          <div className="space-y-3">
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="https://docs.google.com/spreadsheets/d/..."
+                className="flex-1 px-3 py-2 border rounded-lg"
+                onChange={(e) => {
+                  const url = e.target.value.trim()
+                  const match = url.match(/\/d\/([a-zA-Z0-9-_]+)/)
+                  if (match) {
+                    onConfigChange({
+                      ...config,
+                      targetSpreadsheetId: match[1],
+                      targetSpreadsheetUrl: url
+                    })
+                  }
+                }}
+              />
+            </div>
+            <p className="text-xs text-gray-500">
+              💡 <a href="https://sheets.new" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">여기를 클릭</a>하면 새 스프레드시트가 생성됩니다
+            </p>
+          </div>
         ) : (
           <div className="flex items-center gap-2 text-green-600">
             <CheckCircle2 className="h-5 w-5" />
-            <span className="font-medium">생성 완료</span>
+            <span className="font-medium">스프레드시트 연결됨</span>
             <a
               href={config.targetSpreadsheetUrl}
               target="_blank"
@@ -517,9 +605,53 @@ function SheetStatusItem({ sheet }: { sheet: SheetMigrationState }) {
 // 완료 단계 컴포넌트
 function CompleteStep({ migrationState, onComplete }: any) {
   const [showBISelector, setShowBISelector] = useState(false)
+  const [description, setDescription] = useState<string>('')
+  const [isGenerating, setIsGenerating] = useState(false)
+
   const duration = migrationState.endTime - migrationState.startTime
   const minutes = Math.floor(duration / 60000)
   const seconds = Math.floor((duration % 60000) / 1000)
+
+  // 자연어 설명 생성
+  const generateDescription = async () => {
+    setIsGenerating(true)
+    try {
+      // 스프레드시트 ID를 URL로 변환
+      const spreadsheetUrl = `https://docs.google.com/spreadsheets/d/${migrationState.config.targetSpreadsheetId}/edit`
+
+      const response = await fetch('/api/ssa/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          url: spreadsheetUrl,
+          projectType: 'sheets'
+        })
+      })
+
+      const data = await response.json()
+
+      // structureAnalysis에서 natural language description 추출
+      if (data.structureAnalysis?.sections) {
+        const descSection = data.structureAnalysis.sections.find((s: any) =>
+          s.title?.includes('자연어 설명') || s.title?.includes('Natural Language')
+        )
+        if (descSection) {
+          setDescription(descSection.content)
+        } else if (data.structureAnalysis.summary) {
+          setDescription(data.structureAnalysis.summary)
+        } else {
+          setDescription('설명을 생성할 수 없습니다.')
+        }
+      } else {
+        setDescription('설명 생성에 실패했습니다.')
+      }
+    } catch (error) {
+      console.error('설명 생성 오류:', error)
+      setDescription('설명 생성 중 오류가 발생했습니다.')
+    } finally {
+      setIsGenerating(false)
+    }
+  }
 
   return (
     <>
@@ -547,6 +679,48 @@ function CompleteStep({ migrationState, onComplete }: any) {
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <div className="text-2xl font-bold text-blue-600">{minutes}:{seconds.toString().padStart(2, '0')}</div>
             <div className="text-sm text-gray-600">소요 시간</div>
+          </div>
+        </div>
+
+        {/* 자연어 설명 섹션 */}
+        <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-6 max-w-2xl mx-auto">
+          <div className="text-left">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="p-2 bg-green-100 rounded-lg">
+                <FileText className="h-5 w-5 text-green-600" />
+              </div>
+              <h4 className="font-semibold text-gray-900">
+                📝 스프레드시트 자연어 설명
+              </h4>
+            </div>
+
+            {!description && !isGenerating && (
+              <div>
+                <p className="text-sm text-gray-600 mb-4">
+                  전처리된 스프레드시트의 구조와 내용을 자연어로 설명합니다.
+                </p>
+                <button
+                  onClick={generateDescription}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition text-sm"
+                >
+                  <FileText className="h-4 w-4" />
+                  설명 생성하기
+                </button>
+              </div>
+            )}
+
+            {isGenerating && (
+              <div className="flex items-center gap-3 text-gray-600">
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-green-600"></div>
+                <span className="text-sm">설명을 생성하고 있습니다...</span>
+              </div>
+            )}
+
+            {description && !isGenerating && (
+              <div className="bg-white border border-green-200 rounded-lg p-4">
+                <p className="text-sm text-gray-700 whitespace-pre-wrap">{description}</p>
+              </div>
+            )}
           </div>
         </div>
 

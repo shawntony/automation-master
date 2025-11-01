@@ -24,11 +24,20 @@ export async function POST(request: NextRequest) {
     }
 
     // 환경 변수 확인
+    console.log('[create-sheet] Checking environment variables...')
+    console.log('[create-sheet] EMAIL exists:', !!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL)
+    console.log('[create-sheet] PRIVATE_KEY exists:', !!process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY)
+
     if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY) {
+      console.error('[create-sheet] Environment variables missing!')
       return NextResponse.json(
         {
           success: false,
-          error: 'Google Service Account 설정이 필요합니다. 환경 설정 페이지에서 설정해주세요.'
+          error: 'Google Service Account 설정이 필요합니다. 환경 설정 페이지에서 설정해주세요.',
+          debug: {
+            emailExists: !!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+            privateKeyExists: !!process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY
+          }
         },
         { status: 500 }
       )
@@ -48,27 +57,94 @@ export async function POST(request: NextRequest) {
     const sheets = google.sheets({ version: 'v4', auth })
     const drive = google.drive({ version: 'v3', auth })
 
-    console.log(`[create-sheet] Creating new spreadsheet: "${title}"`)
+    console.log(`[create-sheet] Copying spreadsheet: "${title}"`)
 
-    // 1. 새 스프레드시트 생성
-    const createResponse = await sheets.spreadsheets.create({
+    // 1. Google Drive API로 원본 스프레드시트 복사 (빈 스프레드시트로)
+    const copyResponse = await drive.files.copy({
+      fileId: sourceSpreadsheetId,
       requestBody: {
-        properties: {
-          title,
-          locale: 'ko_KR',
-          timeZone: 'Asia/Seoul'
-        }
-      }
+        name: title,
+        mimeType: 'application/vnd.google-apps.spreadsheet'
+      },
+      fields: 'id, webViewLink'
     })
 
-    const newSpreadsheetId = createResponse.data.spreadsheetId
-    const newSpreadsheetUrl = createResponse.data.spreadsheetUrl
+    const newSpreadsheetId = copyResponse.data.id
+    const newSpreadsheetUrl = copyResponse.data.webViewLink
 
     if (!newSpreadsheetId || !newSpreadsheetUrl) {
-      throw new Error('스프레드시트 생성 실패: ID 또는 URL을 받지 못했습니다')
+      throw new Error('스프레드시트 복사 실패: ID 또는 URL을 받지 못했습니다')
     }
 
-    console.log(`[create-sheet] Created spreadsheet: ${newSpreadsheetId}`)
+    console.log(`[create-sheet] Copied spreadsheet: ${newSpreadsheetId}`)
+
+    // 2. 복사된 스프레드시트의 모든 시트 삭제 (빈 스프레드시트로 만들기)
+    try {
+      const copiedSpreadsheet = await sheets.spreadsheets.get({
+        spreadsheetId: newSpreadsheetId,
+        includeGridData: false
+      })
+
+      const allSheets = copiedSpreadsheet.data.sheets || []
+
+      if (allSheets.length > 1) {
+        // 첫 번째 시트를 제외한 모든 시트 삭제
+        const deleteRequests = allSheets.slice(1).map(sheet => ({
+          deleteSheet: {
+            sheetId: sheet.properties?.sheetId
+          }
+        }))
+
+        if (deleteRequests.length > 0) {
+          await sheets.spreadsheets.batchUpdate({
+            spreadsheetId: newSpreadsheetId,
+            requestBody: {
+              requests: deleteRequests
+            }
+          })
+          console.log(`[create-sheet] Deleted ${deleteRequests.length} sheets`)
+        }
+      }
+
+      // 첫 번째 시트를 빈 시트로 만들기
+      if (allSheets.length > 0 && allSheets[0].properties) {
+        const firstSheetId = allSheets[0].properties.sheetId
+        await sheets.spreadsheets.batchUpdate({
+          spreadsheetId: newSpreadsheetId,
+          requestBody: {
+            requests: [
+              {
+                updateSheetProperties: {
+                  properties: {
+                    sheetId: firstSheetId,
+                    title: 'Sheet1',
+                    gridProperties: {
+                      rowCount: 1000,
+                      columnCount: 26
+                    }
+                  },
+                  fields: 'title,gridProperties'
+                }
+              },
+              {
+                updateCells: {
+                  range: {
+                    sheetId: firstSheetId
+                  },
+                  fields: 'userEnteredValue'
+                }
+              }
+            ]
+          }
+        })
+        console.log(`[create-sheet] Cleared first sheet`)
+      }
+    } catch (clearError) {
+      console.warn('[create-sheet] Failed to clear sheets:', clearError)
+      // 시트 정리 실패는 무시하고 계속 진행
+    }
+
+    console.log(`[create-sheet] Prepared empty spreadsheet: ${newSpreadsheetId}`)
 
     // 2. 원본 스프레드시트의 공유 권한 복사 (선택사항)
     try {

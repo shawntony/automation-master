@@ -3,6 +3,22 @@ import { google } from 'googleapis'
 import type { CopySheetRequest, CopySheetResponse, PreprocessOptions } from '@/types/migration'
 
 /**
+ * Google Sheets 범위 표기법을 위한 시트 이름 이스케이프
+ * 시트 이름에 포함된 작은따옴표를 두 개로 변환하고 전체를 작은따옴표로 감쌉니다.
+ *
+ * @param sheetName 원본 시트 이름
+ * @returns 이스케이프된 범위 표기법 문자열
+ * @example escapeSheetName("Sheet'1") => "'Sheet''1'"
+ * @example escapeSheetName("비용세부내역") => "'비용세부내역'"
+ */
+function escapeSheetName(sheetName: string): string {
+  // 시트 이름 내부의 작은따옴표를 두 개로 변환
+  const escapedName = sheetName.replace(/'/g, "''")
+  // 전체를 작은따옴표로 감싸서 반환
+  return `'${escapedName}'`
+}
+
+/**
  * 시트 복사 및 전처리 API
  * POST /api/ssa/migrate/copy-sheet
  *
@@ -94,22 +110,49 @@ export async function POST(request: NextRequest) {
 
     console.log(`[copy-sheet] Sheet copied with ID: ${copiedSheetId}`)
 
+    // 2-1. 복사된 시트의 실제 이름 조회 (copyTo는 "Copy of ..." 형태로 이름을 변경할 수 있음)
+    const targetSpreadsheetInfo = await sheets.spreadsheets.get({
+      spreadsheetId: targetSpreadsheetId,
+      includeGridData: false
+    })
+
+    const copiedSheetInfo = targetSpreadsheetInfo.data.sheets?.find(
+      (s) => s.properties?.sheetId === copiedSheetId
+    )
+
+    const copiedSheetName = copiedSheetInfo?.properties?.title || sheetName
+
+    console.log(`[copy-sheet] Copied sheet name: "${copiedSheetName}"`)
+
+    // 2-2. 복사된 시트의 이름을 원본과 동일하게 변경
+    if (copiedSheetName !== sheetName) {
+      console.log(`[copy-sheet] Renaming sheet from "${copiedSheetName}" to "${sheetName}"`)
+      await sheets.spreadsheets.batchUpdate({
+        spreadsheetId: targetSpreadsheetId,
+        requestBody: {
+          requests: [
+            {
+              updateSheetProperties: {
+                properties: {
+                  sheetId: copiedSheetId,
+                  title: sheetName
+                },
+                fields: 'title'
+              }
+            }
+          ]
+        }
+      })
+      console.log(`[copy-sheet] Sheet renamed successfully`)
+    }
+
     // 3. 전처리 옵션 적용
     const requests: any[] = []
 
     // 3-1. 빈 행 제거
     if (preprocessOptions.removeEmptyRows) {
       console.log('[copy-sheet] Preprocessing: Removing empty rows...')
-      // Google Sheets API는 빈 행 자동 제거를 지원하지 않으므로
-      // 데이터 범위 감지 후 축소하는 방식 사용
-      const targetSheet = await sheets.spreadsheets.get({
-        spreadsheetId: targetSpreadsheetId,
-        ranges: [`'${sheetName}'`],
-        includeGridData: true
-      })
-
-      // 빈 행 감지 로직 (간단한 버전)
-      // 실제로는 더 정교한 로직이 필요할 수 있음
+      // 빈 행 제거는 현재 구현하지 않음 (복잡도가 높아 나중에 필요시 구현)
     }
 
     // 3-2. 빈 열 제거
@@ -122,10 +165,10 @@ export async function POST(request: NextRequest) {
     if (preprocessOptions.convertFormulasToValues) {
       console.log('[copy-sheet] Preprocessing: Converting formulas to values...')
 
-      // 전체 데이터 범위 가져오기
+      // 전체 데이터 범위 가져오기 (시트 이름만 사용, escapeSheetName 사용 안 함)
       const values = await sheets.spreadsheets.values.get({
         spreadsheetId: targetSpreadsheetId,
-        range: `'${sheetName}'`,
+        range: sheetName, // 시트 이름만 사용 (Google API가 자동으로 처리)
         valueRenderOption: 'FORMATTED_VALUE' // 계산된 값으로 가져오기
       })
 
@@ -133,7 +176,7 @@ export async function POST(request: NextRequest) {
         // 값으로 덮어쓰기
         await sheets.spreadsheets.values.update({
           spreadsheetId: targetSpreadsheetId,
-          range: `'${sheetName}'`,
+          range: sheetName, // 시트 이름만 사용
           valueInputOption: 'RAW', // 수식이 아닌 값으로 입력
           requestBody: {
             values: values.data.values
@@ -190,7 +233,7 @@ export async function POST(request: NextRequest) {
     // 4. 복사 결과 통계 수집
     const targetSheet = await sheets.spreadsheets.get({
       spreadsheetId: targetSpreadsheetId,
-      ranges: [`'${sheetName}'`],
+      ranges: [sheetName], // 시트 이름만 사용
       includeGridData: false
     })
 
