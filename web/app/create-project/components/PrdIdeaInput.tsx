@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { Lightbulb, Sparkles, AlertCircle, CheckCircle } from 'lucide-react'
+import { Lightbulb, Sparkles, AlertCircle, CheckCircle, Brain, Zap } from 'lucide-react'
+import type { AiModel } from '@/types/prd'
 
 interface PrdIdeaInputProps {
   projectName: string
@@ -14,6 +15,7 @@ export function PrdIdeaInput({ projectName, projectType, onIdeaSubmit }: PrdIdea
   const [isGenerating, setIsGenerating] = useState(false)
   const [generatedPrd, setGeneratedPrd] = useState<string | null>(null)
   const [error, setError] = useState<string>('')
+  const [selectedModel, setSelectedModel] = useState<AiModel>('none')
 
   const handleGenerate = async () => {
     if (!idea || idea.trim().length < 20) {
@@ -25,14 +27,53 @@ export function PrdIdeaInput({ projectName, projectType, onIdeaSubmit }: PrdIdea
     setIsGenerating(true)
 
     try {
-      // PRD 생성 (클라이언트 측에서 템플릿 사용)
-      const { ideaToPrdMarkdown } = await import('@/lib/prd-templates')
-      const prd = ideaToPrdMarkdown(projectName, idea)
+      let prd: string
+
+      // AI 모델 선택에 따라 PRD 생성
+      if (selectedModel !== 'none') {
+        // AI API 호출
+        const response = await fetch('/api/prd/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: selectedModel,
+            projectName,
+            projectType,
+            input: idea,
+            inputType: 'idea'
+          })
+        })
+
+        const data = await response.json()
+
+        if (!data.success) {
+          // AI 생성 실패 시 템플릿으로 폴백
+          console.warn('AI 생성 실패, 템플릿 사용:', data.error)
+          setError(`${selectedModel.toUpperCase()} 생성 실패. 기본 템플릿을 사용합니다.`)
+          const { ideaToPrdMarkdown } = await import('@/lib/prd-templates')
+          prd = ideaToPrdMarkdown(projectName, idea)
+        } else {
+          prd = data.prd
+        }
+      } else {
+        // 템플릿 사용 (빠른 생성)
+        const { ideaToPrdMarkdown } = await import('@/lib/prd-templates')
+        prd = ideaToPrdMarkdown(projectName, idea)
+      }
 
       setGeneratedPrd(prd)
       onIdeaSubmit(idea)
     } catch (err: any) {
       setError('PRD 생성 중 오류가 발생했습니다: ' + err.message)
+      // 에러 발생 시에도 템플릿으로 폴백 시도
+      try {
+        const { ideaToPrdMarkdown } = await import('@/lib/prd-templates')
+        const prd = ideaToPrdMarkdown(projectName, idea)
+        setGeneratedPrd(prd)
+        onIdeaSubmit(idea)
+      } catch {
+        // 최종 실패
+      }
     } finally {
       setIsGenerating(false)
     }
@@ -57,6 +98,71 @@ export function PrdIdeaInput({ projectName, projectType, onIdeaSubmit }: PrdIdea
       {/* Idea Input */}
       {!generatedPrd ? (
         <div className="space-y-4">
+          {/* AI Model Selector */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              PRD 생성 방식 선택
+            </label>
+            <div className="grid grid-cols-3 gap-3">
+              {/* Template - Fast */}
+              <button
+                onClick={() => setSelectedModel('none')}
+                className={`p-4 rounded-lg border-2 transition-all ${
+                  selectedModel === 'none'
+                    ? 'border-indigo-500 bg-indigo-50'
+                    : 'border-gray-200 hover:border-gray-300 bg-white'
+                }`}
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <Zap className={`h-5 w-5 ${selectedModel === 'none' ? 'text-indigo-600' : 'text-gray-400'}`} />
+                  <span className={`font-medium text-sm ${selectedModel === 'none' ? 'text-indigo-900' : 'text-gray-700'}`}>
+                    템플릿
+                  </span>
+                </div>
+                <p className="text-xs text-gray-600">빠른 생성 (1초)</p>
+                <p className="text-xs text-gray-500 mt-1">기본 구조</p>
+              </button>
+
+              {/* Claude - Detailed */}
+              <button
+                onClick={() => setSelectedModel('claude')}
+                className={`p-4 rounded-lg border-2 transition-all ${
+                  selectedModel === 'claude'
+                    ? 'border-purple-500 bg-purple-50'
+                    : 'border-gray-200 hover:border-gray-300 bg-white'
+                }`}
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <Brain className={`h-5 w-5 ${selectedModel === 'claude' ? 'text-purple-600' : 'text-gray-400'}`} />
+                  <span className={`font-medium text-sm ${selectedModel === 'claude' ? 'text-purple-900' : 'text-gray-700'}`}>
+                    Claude
+                  </span>
+                </div>
+                <p className="text-xs text-gray-600">상세 PRD (15초)</p>
+                <p className="text-xs text-gray-500 mt-1">깊이 있는 분석</p>
+              </button>
+
+              {/* Gemini - Structured */}
+              <button
+                onClick={() => setSelectedModel('gemini')}
+                className={`p-4 rounded-lg border-2 transition-all ${
+                  selectedModel === 'gemini'
+                    ? 'border-blue-500 bg-blue-50'
+                    : 'border-gray-200 hover:border-gray-300 bg-white'
+                }`}
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <Sparkles className={`h-5 w-5 ${selectedModel === 'gemini' ? 'text-blue-600' : 'text-gray-400'}`} />
+                  <span className={`font-medium text-sm ${selectedModel === 'gemini' ? 'text-blue-900' : 'text-gray-700'}`}>
+                    Gemini
+                  </span>
+                </div>
+                <p className="text-xs text-gray-600">구조화 PRD (10초)</p>
+                <p className="text-xs text-gray-500 mt-1">실용적 내용</p>
+              </button>
+            </div>
+          </div>
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               프로젝트 아이디어 <span className="text-red-500">*</span>
@@ -88,17 +194,24 @@ export function PrdIdeaInput({ projectName, projectType, onIdeaSubmit }: PrdIdea
           <button
             onClick={handleGenerate}
             disabled={isGenerating || charCount < 20}
-            className="w-full px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium flex items-center justify-center gap-2"
+            className={`w-full px-6 py-3 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium flex items-center justify-center gap-2 ${
+              selectedModel === 'claude' ? 'bg-purple-600 hover:bg-purple-700' :
+              selectedModel === 'gemini' ? 'bg-blue-600 hover:bg-blue-700' :
+              'bg-indigo-600 hover:bg-indigo-700'
+            }`}
           >
             {isGenerating ? (
               <>
                 <Sparkles className="h-5 w-5 animate-spin" />
-                PRD 생성 중...
+                {selectedModel === 'claude' && 'Claude로 PRD 생성 중...'}
+                {selectedModel === 'gemini' && 'Gemini로 PRD 생성 중...'}
+                {selectedModel === 'none' && 'PRD 생성 중...'}
               </>
             ) : (
               <>
-                <Sparkles className="h-5 w-5" />
-                AI로 PRD 자동 생성
+                {selectedModel === 'claude' && <><Brain className="h-5 w-5" />Claude로 상세 PRD 생성</>}
+                {selectedModel === 'gemini' && <><Sparkles className="h-5 w-5" />Gemini로 구조화 PRD 생성</>}
+                {selectedModel === 'none' && <><Zap className="h-5 w-5" />템플릿으로 빠른 생성</>}
               </>
             )}
           </button>
