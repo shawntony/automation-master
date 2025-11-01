@@ -20,7 +20,8 @@ import {
   Zap,
   TrendingUp,
   Presentation,
-  BookOpen
+  BookOpen,
+  FolderPlus
 } from 'lucide-react'
 
 const navItems = [
@@ -33,6 +34,12 @@ const navItems = [
     name: '워크플로우',
     href: '/workflow',
     icon: Workflow
+  },
+  {
+    name: '새 프로젝트 만들기',
+    href: '/create-project',
+    icon: FolderPlus,
+    badge: 'NEW'
   },
   {
     name: '웹앱 생성기',
@@ -189,6 +196,11 @@ export default function Navigation() {
               >
                 <item.icon className="w-4 h-4" />
                 {item.name}
+                {item.badge && (
+                  <span className="ml-auto text-xs bg-green-500 text-white px-2 py-0.5 rounded-full">
+                    {item.badge}
+                  </span>
+                )}
               </Link>
             )}
           </li>

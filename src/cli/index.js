@@ -230,6 +230,21 @@ program
   });
 
 /**
+ * 프로젝트 생성 도우미 명령어
+ */
+program
+  .command('create')
+  .description('새 프로젝트 생성 (프로젝트 생성 도우미)')
+  .action(async () => {
+    try {
+      const { createProject } = await import('./create-project.js');
+      await createProject();
+    } catch (error) {
+      console.error(chalk.red('오류:', error.message));
+    }
+  });
+
+/**
  * 단계 가이드 표시
  */
 async function showStepGuide(stepId, action) {
