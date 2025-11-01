@@ -670,7 +670,7 @@ export default function AppsScriptGeneratorPage() {
                     }}
                     onSelectCode={(item) => {
                       alert(`선택한 코드: ${item.code.title}\n\n사용 횟수가 증가했습니다.`)
-                      import('@/lib/code-library-storage').then(({ CodeLibraryStorage }) => {
+                      import('@/lib/assistant/code-library-storage').then(({ CodeLibraryStorage }) => {
                         CodeLibraryStorage.incrementUsage(item.id)
                       })
                     }}

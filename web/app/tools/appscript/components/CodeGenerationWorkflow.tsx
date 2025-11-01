@@ -14,7 +14,7 @@ import { CodeExecutionPreview } from './CodeExecutionPreview'
 import { TemplateBrowser } from './TemplateBrowser'
 import { EnhancedCodeGenerator, type EnhancedCodeGeneratorRef } from './EnhancedCodeGenerator'
 import { getCodeMenuById } from '@/lib/code-menu-storage'
-import { CodeLibraryStorage } from '@/lib/code-library-storage'
+import { CodeLibraryStorage } from '@/lib/assistant/code-library-storage'
 import {
   createConversation,
   addMessage,
