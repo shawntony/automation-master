@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { ProgressBar } from '@/components/unified/ProgressBar'
 import { StepNavigation } from '@/components/unified/StepNavigation'
 import { ProjectInfo } from '@/components/unified/ProjectInfo'
@@ -10,19 +10,26 @@ import { PrdFormWizard } from '../create-project/components/PrdFormWizard'
 import { PromptHistory } from '@/components/unified/PromptHistory'
 import {
   Step4IdeaDefinition,
+  Step5PrdWriter,
+  Step6SystemDesign,
+  Step7SupabaseSchema,
+  Step8FrontendTree,
+  Step9ApiDesigner,
+  Step10DataFlow,
+  Step11Security,
+  Step12Testing,
+  Step13Deployment,
   GenericWorkflowStep,
-  step5Fields,
-  step6Fields,
-  step7Fields,
-  step8Fields,
-  step9Fields,
-  step10Fields,
-  step11Fields,
-  step12Fields,
-  step13Fields,
+  getFieldsForStep,
   stepIcons,
   stepTitles
 } from './steps'
+import {
+  getWorkflowConfig,
+  isStepRequired,
+  getSkipReason,
+  getNavigationInfo
+} from '@/lib/workflow-config'
 import {
   Package,
   FileText,
@@ -45,7 +52,12 @@ import {
   saveProgressClient,
   loadProgressClient,
   hasProgressClient
-} from '@/lib/progress-storage'
+} from '@/lib/progress-storage.client'
+import {
+  validateProjectName,
+  validateProjectType,
+  validatePrdMethod
+} from '@/lib/validation'
 
 const PROJECT_TYPES = [
   {
@@ -104,19 +116,30 @@ export default function UnifiedWorkflowPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [saveMessage, setSaveMessage] = useState<string>()
   const [hasExistingProgress, setHasExistingProgress] = useState(false)
+  const [isInitializing, setIsInitializing] = useState(true)
+
+  // Validation Errors
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
+
+  // Check for existing progress - wrapped in useCallback to prevent recreation
+  const checkExistingProgress = useCallback(async () => {
+    if (!projectPath) return
+    const exists = await hasProgressClient(projectPath)
+    setHasExistingProgress(exists)
+  }, [projectPath])
+
+  // Initialize component
+  useEffect(() => {
+    setIsInitializing(false)
+  }, [])
 
   // Check for existing progress on mount
   useEffect(() => {
     if (projectPath) {
       checkExistingProgress()
     }
-  }, [projectPath])
-
-  const checkExistingProgress = async () => {
-    if (!projectPath) return
-    const exists = await hasProgressClient(projectPath)
-    setHasExistingProgress(exists)
-  }
+  }, [projectPath, checkExistingProgress])
 
   // Auto-save after each step completion
   useEffect(() => {
@@ -124,7 +147,25 @@ export default function UnifiedWorkflowPage() {
       // Auto-save after workflow steps (4+)
       handleSaveProgress(true)
     }
-  }, [completedSteps.length])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectPath, completedSteps.length])
+
+  // Warn before page unload if there are unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault()
+        e.returnValue = ''
+        return ''
+      }
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload)
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload)
+    }
+  }, [hasUnsavedChanges])
 
   // ========== Progress Save/Load Handlers ==========
   const handleSaveProgress = async (isAutoSave = false) => {
@@ -155,6 +196,7 @@ export default function UnifiedWorkflowPage() {
 
     if (result.success) {
       setSaveMessage(isAutoSave ? '✅ 자동 저장됨' : '✅ 진행 상황 저장 완료')
+      setHasUnsavedChanges(false)
       setTimeout(() => setSaveMessage(undefined), 3000)
     } else {
       setSaveMessage(`❌ 저장 실패: ${result.error}`)
@@ -211,6 +253,14 @@ export default function UnifiedWorkflowPage() {
   // [Insert all existing handler functions here]
 
   const handleNext = async () => {
+    // Validate current step before proceeding
+    if (currentStep <= 3) {
+      const isValid = validateCurrentStep()
+      if (!isValid) {
+        return // Don't proceed if validation fails
+      }
+    }
+
     if (currentStep === 3) {
       // Step 3: Create the project
       await handleCreateProject()
@@ -219,13 +269,37 @@ export default function UnifiedWorkflowPage() {
       if (!completedSteps.includes(currentStep)) {
         setCompletedSteps([...completedSteps, currentStep])
       }
-      setCurrentStep(currentStep + 1)
+
+      // Use workflow navigation for steps 4+
+      if (currentStep >= 4) {
+        const navInfo = getNavigationInfo(projectType, currentStep)
+        if (navInfo.nextStep) {
+          setCurrentStep(navInfo.nextStep)
+        } else {
+          // No more required steps - workflow complete
+          setCurrentStep(currentStep + 1)
+        }
+      } else {
+        setCurrentStep(currentStep + 1)
+      }
+      setHasUnsavedChanges(true)
     }
   }
 
   const handlePrevious = () => {
     if (currentStep > 1) {
-      setCurrentStep(currentStep - 1)
+      // Use workflow navigation for steps 5+
+      if (currentStep >= 5) {
+        const navInfo = getNavigationInfo(projectType, currentStep)
+        if (navInfo.previousStep) {
+          setCurrentStep(navInfo.previousStep)
+        } else {
+          // No previous workflow step - go to step 4
+          setCurrentStep(4)
+        }
+      } else {
+        setCurrentStep(currentStep - 1)
+      }
     }
   }
 
@@ -291,14 +365,52 @@ export default function UnifiedWorkflowPage() {
       setCompletedSteps([...completedSteps, stepNumber])
     }
     setCurrentStep(stepNumber + 1)
+    setHasUnsavedChanges(true)
+  }
+
+  // Validation handlers
+  const validateCurrentStep = (): boolean => {
+    const errors: Record<string, string> = {}
+
+    if (currentStep === 1) {
+      const result = validateProjectName(projectName)
+      if (!result.valid && result.error) {
+        errors.projectName = result.error
+      }
+    } else if (currentStep === 2) {
+      const result = validateProjectType(projectType)
+      if (!result.valid && result.error) {
+        errors.projectType = result.error
+      }
+    } else if (currentStep === 3) {
+      const result = validatePrdMethod(prdMethod)
+      if (!result.valid && result.error) {
+        errors.prdMethod = result.error
+      }
+    }
+
+    setValidationErrors(errors)
+    return Object.keys(errors).length === 0
   }
 
   const canGoBack = currentStep > 1 && !isCreating
   const canGoForward =
-    (currentStep === 1 && projectName.trim()) ||
-    (currentStep === 2 && projectType) ||
-    (currentStep === 3 && prdMethod) ||
+    (currentStep === 1 && projectName.trim() && !validationErrors.projectName) ||
+    (currentStep === 2 && projectType && !validationErrors.projectType) ||
+    (currentStep === 3 && prdMethod && !validationErrors.prdMethod) ||
     currentStep > 3
+
+  // Get disabled reason for UI feedback
+  const getDisabledReason = (): string | undefined => {
+    if (isCreating) return '프로젝트 생성 중...'
+    if (currentStep === 1) {
+      if (!projectName.trim()) return '프로젝트 이름을 입력해주세요'
+      if (validationErrors.projectName) return validationErrors.projectName
+    }
+    if (currentStep === 2 && !projectType) return '프로젝트 타입을 선택해주세요'
+    if (currentStep === 3 && !prdMethod) return 'PRD 방식을 선택해주세요'
+    return undefined
+  }
 
   // [Insert all renderStepContent and other render functions here]
   const renderStepContent = () => {
@@ -321,127 +433,181 @@ export default function UnifiedWorkflowPage() {
           )
 
         case 5:
+          const skip5 = prdPath
+            ? { check: true, message: `Step 2에서 PRD를 이미 작성했습니다: ${prdPath}` }
+            : !isStepRequired(projectType, 5)
+            ? { check: true, message: getSkipReason(projectType, 5) || '이 단계는 현재 프로젝트 타입에서 선택사항입니다' }
+            : undefined
+
           return (
-            <GenericWorkflowStep
+            <Step5PrdWriter
               stepNumber={5}
               stepTitle={stepTitles[5]}
               stepIcon={stepIcons[5]}
               {...stepProps}
-              fields={step5Fields}
               initialData={workflowData[5]}
               onComplete={(data, prompt) => handleStepComplete(5, data, prompt)}
-              skipCondition={
-                prdPath
-                  ? {
-                      check: true,
-                      message: `Step 2에서 PRD를 이미 작성했습니다: ${prdPath}`
-                    }
-                  : undefined
-              }
+              skipCondition={skip5}
             />
           )
 
         case 6:
+          const skip6 = !isStepRequired(projectType, 6)
+            ? {
+                check: true,
+                message: getSkipReason(projectType, 6) || '이 단계는 현재 프로젝트 타입에서 선택사항입니다'
+              }
+            : undefined
+
           return (
-            <GenericWorkflowStep
+            <Step6SystemDesign
               stepNumber={6}
               stepTitle={stepTitles[6]}
               stepIcon={stepIcons[6]}
               {...stepProps}
-              fields={step6Fields}
               initialData={workflowData[6]}
               onComplete={(data, prompt) => handleStepComplete(6, data, prompt)}
+              skipCondition={skip6}
             />
           )
 
         case 7:
+          const skip7 = !isStepRequired(projectType, 7)
+            ? {
+                check: true,
+                message: getSkipReason(projectType, 7) || '이 단계는 현재 프로젝트 타입에서 선택사항입니다'
+              }
+            : undefined
+
           return (
-            <GenericWorkflowStep
+            <Step7SupabaseSchema
               stepNumber={7}
               stepTitle={stepTitles[7]}
               stepIcon={stepIcons[7]}
               {...stepProps}
-              fields={step7Fields}
               initialData={workflowData[7]}
               onComplete={(data, prompt) => handleStepComplete(7, data, prompt)}
+              skipCondition={skip7}
             />
           )
 
         case 8:
+          const skip8 = !isStepRequired(projectType, 8)
+            ? {
+                check: true,
+                message: getSkipReason(projectType, 8) || '이 단계는 현재 프로젝트 타입에서 선택사항입니다'
+              }
+            : undefined
+
           return (
-            <GenericWorkflowStep
+            <Step8FrontendTree
               stepNumber={8}
               stepTitle={stepTitles[8]}
               stepIcon={stepIcons[8]}
               {...stepProps}
-              fields={step8Fields}
               initialData={workflowData[8]}
               onComplete={(data, prompt) => handleStepComplete(8, data, prompt)}
+              skipCondition={skip8}
             />
           )
 
         case 9:
+          const skip9 = !isStepRequired(projectType, 9)
+            ? {
+                check: true,
+                message: getSkipReason(projectType, 9) || '이 단계는 현재 프로젝트 타입에서 선택사항입니다'
+              }
+            : undefined
+
           return (
-            <GenericWorkflowStep
+            <Step9ApiDesigner
               stepNumber={9}
               stepTitle={stepTitles[9]}
               stepIcon={stepIcons[9]}
               {...stepProps}
-              fields={step9Fields}
               initialData={workflowData[9]}
               onComplete={(data, prompt) => handleStepComplete(9, data, prompt)}
+              skipCondition={skip9}
             />
           )
 
         case 10:
+          const skip10 = !isStepRequired(projectType, 10)
+            ? {
+                check: true,
+                message: getSkipReason(projectType, 10) || '이 단계는 현재 프로젝트 타입에서 선택사항입니다'
+              }
+            : undefined
+
           return (
-            <GenericWorkflowStep
+            <Step10DataFlow
               stepNumber={10}
               stepTitle={stepTitles[10]}
               stepIcon={stepIcons[10]}
               {...stepProps}
-              fields={step10Fields}
               initialData={workflowData[10]}
               onComplete={(data, prompt) => handleStepComplete(10, data, prompt)}
+              skipCondition={skip10}
             />
           )
 
         case 11:
+          const skip11 = !isStepRequired(projectType, 11)
+            ? {
+                check: true,
+                message: getSkipReason(projectType, 11) || '이 단계는 현재 프로젝트 타입에서 선택사항입니다'
+              }
+            : undefined
+
           return (
-            <GenericWorkflowStep
+            <Step11Security
               stepNumber={11}
               stepTitle={stepTitles[11]}
               stepIcon={stepIcons[11]}
               {...stepProps}
-              fields={step11Fields}
               initialData={workflowData[11]}
               onComplete={(data, prompt) => handleStepComplete(11, data, prompt)}
+              skipCondition={skip11}
             />
           )
 
         case 12:
+          const skip12 = !isStepRequired(projectType, 12)
+            ? {
+                check: true,
+                message: getSkipReason(projectType, 12) || '이 단계는 현재 프로젝트 타입에서 선택사항입니다'
+              }
+            : undefined
+
           return (
-            <GenericWorkflowStep
+            <Step12Testing
               stepNumber={12}
               stepTitle={stepTitles[12]}
               stepIcon={stepIcons[12]}
               {...stepProps}
-              fields={step12Fields}
               initialData={workflowData[12]}
               onComplete={(data, prompt) => handleStepComplete(12, data, prompt)}
+              skipCondition={skip12}
             />
           )
 
         case 13:
+          const skip13 = !isStepRequired(projectType, 13)
+            ? {
+                check: true,
+                message: getSkipReason(projectType, 13) || '이 단계는 현재 프로젝트 타입에서 선택사항입니다'
+              }
+            : undefined
+
           return (
-            <GenericWorkflowStep
+            <Step13Deployment
               stepNumber={13}
               stepTitle={stepTitles[13]}
               stepIcon={stepIcons[13]}
               {...stepProps}
-              fields={step13Fields}
               initialData={workflowData[13]}
               onComplete={(data, prompt) => handleStepComplete(13, data, prompt)}
+              skipCondition={skip13}
             />
           )
 
@@ -485,10 +651,51 @@ export default function UnifiedWorkflowPage() {
               <input
                 type="text"
                 value={projectName}
-                onChange={(e) => setProjectName(e.target.value)}
+                onChange={(e) => {
+                  setProjectName(e.target.value)
+                  setHasUnsavedChanges(true)
+                  // Clear error on change
+                  if (validationErrors.projectName) {
+                    const result = validateProjectName(e.target.value)
+                    if (result.valid) {
+                      const { projectName: _, ...rest } = validationErrors
+                      setValidationErrors(rest)
+                    } else if (result.error) {
+                      setValidationErrors({ ...validationErrors, projectName: result.error })
+                    }
+                  }
+                }}
+                onBlur={() => {
+                  // Validate on blur
+                  const result = validateProjectName(projectName)
+                  if (!result.valid && result.error) {
+                    setValidationErrors({ ...validationErrors, projectName: result.error })
+                  }
+                }}
                 placeholder="my-awesome-project"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
+                  validationErrors.projectName
+                    ? 'border-red-500 bg-red-50'
+                    : projectName.trim() && !validationErrors.projectName
+                    ? 'border-green-500 bg-green-50'
+                    : 'border-gray-300'
+                }`}
               />
+              {validationErrors.projectName && (
+                <p className="mt-2 text-sm text-red-600 flex items-center gap-1">
+                  <span>⚠️</span>
+                  {validationErrors.projectName}
+                </p>
+              )}
+              {projectName.trim() && !validationErrors.projectName && (
+                <p className="mt-2 text-sm text-green-600 flex items-center gap-1">
+                  <CheckCircle2 className="h-4 w-4" />
+                  올바른 프로젝트 이름입니다
+                </p>
+              )}
+              <p className="mt-1 text-xs text-gray-500">
+                2-50자, 영문/숫자/한글/-/_ 사용 가능
+              </p>
             </div>
 
             <div>
@@ -670,10 +877,22 @@ export default function UnifiedWorkflowPage() {
   }
 
   // ========== Main Render ==========
+  // Show loading state
+  if (isInitializing) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">초기화 중...</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Progress Bar */}
-      <ProgressBar currentStep={currentStep} completedSteps={completedSteps} />
+      <ProgressBar currentStep={currentStep} completedSteps={completedSteps} projectType={projectType} />
 
       {/* Main Content */}
       <div className="max-w-4xl mx-auto px-6 py-8">
@@ -694,7 +913,11 @@ export default function UnifiedWorkflowPage() {
                   disabled={isSaving}
                   className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:bg-gray-400 transition-colors text-sm font-medium"
                 >
-                  <Save className="h-4 w-4" />
+                  {isSaving ? (
+                    <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
+                  ) : (
+                    <Save className="h-4 w-4" />
+                  )}
                   {isSaving ? '저장 중...' : '진행 상황 저장'}
                 </button>
 
@@ -729,9 +952,28 @@ export default function UnifiedWorkflowPage() {
                   </>
                 )}
 
-                {saveMessage && (
-                  <span className="text-sm text-gray-600 ml-auto">{saveMessage}</span>
-                )}
+                {/* Save status indicator */}
+                <div className="ml-auto flex items-center gap-2">
+                  {isSaving && (
+                    <span className="text-sm text-indigo-600 flex items-center gap-2">
+                      <div className="animate-spin h-3 w-3 border-2 border-indigo-600 border-t-transparent rounded-full" />
+                      저장 중...
+                    </span>
+                  )}
+                  {saveMessage && !isSaving && (
+                    <span className={`text-sm flex items-center gap-1 ${
+                      saveMessage.startsWith('✅') ? 'text-green-600' : 'text-red-600'
+                    }`}>
+                      {saveMessage}
+                    </span>
+                  )}
+                  {!isSaving && !saveMessage && hasUnsavedChanges && (
+                    <span className="text-sm text-amber-600 flex items-center gap-1">
+                      <span className="h-2 w-2 bg-amber-500 rounded-full"></span>
+                      저장되지 않은 변경사항
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
           )}
@@ -755,6 +997,7 @@ export default function UnifiedWorkflowPage() {
               canGoBack={canGoBack}
               canGoForward={canGoForward && !isCreating}
               isCreationComplete={projectPath !== undefined}
+              disabledReason={getDisabledReason()}
             />
           )}
         </div>

@@ -3,6 +3,15 @@
  */
 
 export { Step4IdeaDefinition, type Step4Data } from './Step4IdeaDefinition'
+export { Step5PrdWriter, type Step5Data } from './Step5PrdWriter'
+export { Step6SystemDesign, type Step6Data } from './Step6SystemDesign'
+export { Step7SupabaseSchema, type Step7Data } from './Step7SupabaseSchema'
+export { Step8FrontendTree, type Step8Data } from './Step8FrontendTree'
+export { Step9ApiDesigner, type Step9Data } from './Step9ApiDesigner'
+export { Step10DataFlow, type Step10Data } from './Step10DataFlow'
+export { Step11Security, type Step11Data } from './Step11Security'
+export { Step12Testing, type Step12Data } from './Step12Testing'
+export { Step13Deployment, type Step13Data } from './Step13Deployment'
 export { GenericWorkflowStep } from './GenericWorkflowStep'
 export {
   step5Fields,
@@ -13,7 +22,8 @@ export {
   step10Fields,
   step11Fields,
   step12Fields,
-  step13Fields
+  step13Fields,
+  getFieldsForStep
 } from './stepConfigs'
 
 import {
